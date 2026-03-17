@@ -5,12 +5,20 @@ import { useApp } from '../context/AppContext'
 export default function Home() {
   const { user, totalKcal, totalProt, totalCarb, totalFat, meals, addMeal } = useApp()
   const navigate = useNavigate()
-  const progress = Math.min((totalKcal / user.kcalGoal) * 100, 100)
   const remaining = Math.max(user.kcalGoal - totalKcal, 0)
 
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [portion, setPortion] = useState(1)
+
+  const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  const today = new Date().getDay()
+  const weekData = weekDays.map((day, i) => ({
+    day,
+    kcal: i === today ? totalKcal : Math.floor(Math.random() * 1800 + 200),
+    isToday: i === today,
+  }))
+  const maxKcal = Math.max(...weekData.map(d => d.kcal), 1)
 
   async function analyzeImage(file) {
     setLoading(true)
@@ -67,143 +75,184 @@ export default function Home() {
   }
 
   return (
-    <div className="p-4 pb-24">
+    <div className="pb-24">
 
-      <div className="flex items-center justify-between mb-6">
+      {/* Header */}
+      <div className="px-5 pt-8 pb-4 flex items-center justify-between">
         <div>
-          <p className="text-gray-400 text-sm">Olá,</p>
-          <h1 className="text-white text-2xl font-bold">{user.name} 💪</h1>
+          <p className="text-gray-500 text-sm">Bem-vindo de volta,</p>
+          <h1 className="text-white text-3xl font-black">{user.name}.</h1>
+          <p className="text-gray-500 text-xs mt-1">
+            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
         </div>
         <div
-          className="w-10 h-10 rounded-full bg-green-400 flex items-center justify-center text-black font-bold cursor-pointer"
           onClick={() => navigate('/profile')}
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-xl cursor-pointer"
+          style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)' }}
         >
           {user.name[0].toUpperCase()}
         </div>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 mb-4">
-        <p className="text-gray-400 text-xs uppercase tracking-widest mb-3">Hoje</p>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-green-400 text-5xl font-bold">{totalKcal}</p>
-            <p className="text-gray-400 text-sm mt-1">kcal consumidas</p>
-          </div>
-          <div className="text-right">
-            <p className="text-white text-lg font-bold">{user.kcalGoal}</p>
-            <p className="text-gray-400 text-xs">meta</p>
-            <p className="text-orange-400 text-lg font-bold mt-2">{remaining}</p>
-            <p className="text-gray-400 text-xs">restante</p>
-          </div>
-        </div>
-        <div className="mt-4 bg-gray-800 rounded-full h-2">
-          <div className="bg-green-400 h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      {/* Stats cards */}
+      <div className="px-5 grid grid-cols-3 gap-3 mb-6">
         {[
-          { label: 'Proteína', value: `${totalProt}g`, color: 'text-green-400' },
-          { label: 'Carbs', value: `${totalCarb}g`, color: 'text-orange-400' },
-          { label: 'Gordura', value: `${totalFat}g`, color: 'text-blue-400' },
-        ].map(macro => (
-          <div key={macro.label} className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
-            <p className={`text-xl font-bold ${macro.color}`}>{macro.value}</p>
-            <p className="text-gray-400 text-xs mt-1">{macro.label}</p>
+          { label: 'Calorias', value: totalKcal, unit: 'kcal', icon: '🔥' },
+          { label: 'Proteína', value: `${totalProt}g`, unit: '', icon: '💪' },
+          { label: 'Restante', value: remaining, unit: 'kcal', icon: '⚡' },
+        ].map((stat, i) => (
+          <div
+            key={i}
+            className="rounded-2xl p-3"
+            style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}
+          >
+            <p className="text-2xl mb-1">{stat.icon}</p>
+            <p className="text-white font-black text-lg leading-none">{stat.value}</p>
+            <p className="text-purple-200 text-xs mt-1">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-white font-bold">Últimas refeições</h2>
-        <span className="text-green-400 text-sm cursor-pointer" onClick={() => navigate('/diary')}>
-          Ver tudo →
-        </span>
+      {/* Gráfico semanal */}
+      <div className="mx-5 rounded-2xl p-4 mb-6" style={{ background: '#1A1A1A' }}>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-white font-black text-sm uppercase tracking-wider">Calorias</p>
+          <p className="text-purple-400 text-xs">Média semanal</p>
+        </div>
+        <div className="flex items-end justify-between gap-1" style={{ height: '80px' }}>
+          {weekData.map((d, i) => (
+            <div key={i} className="flex flex-col items-center gap-1 flex-1">
+              <div
+                className="w-full rounded-t-lg transition-all"
+                style={{
+                  height: `${(d.kcal / maxKcal) * 70}px`,
+                  background: d.isToday
+                    ? 'linear-gradient(180deg, #A78BFA, #7C3AED)'
+                    : 'rgba(124, 58, 237, 0.25)',
+                  minHeight: '4px'
+                }}
+              />
+              <p className={`text-xs ${d.isToday ? 'text-purple-400 font-bold' : 'text-gray-600'}`}>
+                {d.day}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 mb-4">
+      {/* Últimas refeições */}
+      <div className="px-5 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-white font-black text-sm uppercase tracking-wider">Refeições</p>
+          <span className="text-purple-400 text-xs cursor-pointer" onClick={() => navigate('/diary')}>
+            Ver tudo →
+          </span>
+        </div>
+
         {meals.length === 0 ? (
-          <p className="text-gray-500 text-sm text-center py-4">Nenhuma refeição registrada hoje</p>
+          <div className="rounded-2xl p-5 text-center" style={{ background: '#1A1A1A' }}>
+            <p className="text-gray-500 text-sm">Nenhuma refeição registrada hoje</p>
+          </div>
         ) : (
-          meals.slice(-3).reverse().map(meal => (
-            <div key={meal.id} className="flex items-center justify-between py-3 border-b border-gray-800 last:border-0">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{meal.emoji}</span>
-                <div>
-                  <p className="text-white text-sm font-medium">{meal.name}</p>
-                  <p className="text-gray-400 text-xs">{meal.time}</p>
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#1A1A1A' }}>
+            {meals.slice(-3).reverse().map(meal => (
+              <div key={meal.id} className="flex items-center justify-between p-4 border-b border-gray-800 last:border-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                    style={{ background: 'rgba(124, 58, 237, 0.2)' }}>
+                    {meal.emoji}
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-bold">{meal.name}</p>
+                    <p className="text-gray-500 text-xs">{meal.time}</p>
+                  </div>
                 </div>
+                <p className="text-purple-400 font-black text-sm">{meal.kcal} kcal</p>
               </div>
-              <p className="text-orange-400 font-bold">{meal.kcal} kcal</p>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 
+      {/* Loading */}
       {loading && (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 text-center mb-4">
-          <p className="text-gray-400 mb-3">Analisando com IA...</p>
+        <div className="mx-5 rounded-2xl p-6 text-center mb-4" style={{ background: '#1A1A1A' }}>
+          <p className="text-gray-400 mb-3 text-sm">Analisando com IA...</p>
           <div className="flex justify-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay:'0.1s'}}></div>
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay:'0.2s'}}></div>
+            <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#7C3AED' }}></div>
+            <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#7C3AED', animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#7C3AED', animationDelay: '0.2s' }}></div>
           </div>
         </div>
       )}
 
+      {/* Resultado IA */}
       {result && !loading && (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 mb-4">
+        <div className="mx-5 rounded-2xl p-5 mb-4" style={{ background: '#1A1A1A', border: '1px solid #7C3AED' }}>
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-4xl">{result.emoji}</span>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+              style={{ background: 'rgba(124, 58, 237, 0.2)' }}>
+              {result.emoji}
+            </div>
             <div>
-              <p className="text-white font-bold text-lg">{result.name}</p>
-              <p className="text-green-400 text-xs">Confiança: {result.confidence}%</p>
+              <p className="text-white font-black text-lg">{result.name}</p>
+              <p className="text-purple-400 text-xs">Confiança: {result.confidence}%</p>
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-4 text-center mb-4">
-            <p className="text-green-400 text-4xl font-bold">{Math.round(result.kcal * portion)}</p>
-            <p className="text-gray-400 text-sm">calorias</p>
+          <div className="rounded-xl p-4 text-center mb-4" style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
+            <p className="text-white text-4xl font-black">{Math.round(result.kcal * portion)}</p>
+            <p className="text-purple-200 text-sm">calorias</p>
           </div>
 
           <div className="grid grid-cols-3 gap-2 mb-4">
             {[
-              { label: 'Proteína', value: Math.round(result.prot * portion), color: 'text-green-400' },
-              { label: 'Carbs', value: Math.round(result.carb * portion), color: 'text-orange-400' },
-              { label: 'Gordura', value: Math.round(result.fat * portion), color: 'text-blue-400' },
+              { label: 'Proteína', value: Math.round(result.prot * portion) },
+              { label: 'Carbs', value: Math.round(result.carb * portion) },
+              { label: 'Gordura', value: Math.round(result.fat * portion) },
             ].map(m => (
-              <div key={m.label} className="bg-gray-800 rounded-xl p-3 text-center">
-                <p className={`font-bold ${m.color}`}>{m.value}g</p>
-                <p className="text-gray-400 text-xs mt-1">{m.label}</p>
+              <div key={m.label} className="rounded-xl p-3 text-center" style={{ background: 'rgba(124, 58, 237, 0.15)' }}>
+                <p className="text-white font-black">{m.value}g</p>
+                <p className="text-gray-500 text-xs mt-1">{m.label}</p>
               </div>
             ))}
           </div>
 
-          <div className="flex items-center justify-between bg-gray-800 rounded-xl p-3 mb-4">
+          <div className="flex items-center justify-between rounded-xl p-3 mb-4" style={{ background: '#111' }}>
             <p className="text-gray-400 text-sm">Porção</p>
             <div className="flex items-center gap-4">
-              <button onClick={() => setPortion(p => Math.max(0.5, p - 0.5))} className="w-8 h-8 bg-gray-700 rounded-lg text-white font-bold">−</button>
-              <span className="text-white font-bold">{portion}x</span>
-              <button onClick={() => setPortion(p => Math.min(5, p + 0.5))} className="w-8 h-8 bg-gray-700 rounded-lg text-white font-bold">+</button>
+              <button onClick={() => setPortion(p => Math.max(0.5, p - 0.5))}
+                className="w-8 h-8 rounded-lg text-white font-bold" style={{ background: '#2A2A2A' }}>−</button>
+              <span className="text-white font-black">{portion}x</span>
+              <button onClick={() => setPortion(p => Math.min(5, p + 0.5))}
+                className="w-8 h-8 rounded-lg text-white font-bold" style={{ background: '#2A2A2A' }}>+</button>
             </div>
           </div>
 
           <div className="flex gap-3">
-            <button onClick={() => setResult(null)} className="flex-1 py-3 bg-gray-800 text-white font-bold rounded-xl">
+            <button onClick={() => setResult(null)}
+              className="flex-1 py-3 rounded-xl text-white font-bold" style={{ background: '#2A2A2A' }}>
               Cancelar
             </button>
-            <button onClick={handleConfirm} className="flex-1 py-3 bg-green-400 text-black font-bold rounded-xl">
+            <button onClick={handleConfirm}
+              className="flex-1 py-3 rounded-xl text-white font-black"
+              style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
               ✓ Adicionar
             </button>
           </div>
         </div>
       )}
 
-      <label className="flex items-center justify-center gap-3 w-full bg-green-400 hover:bg-green-300 text-black font-bold py-4 rounded-2xl cursor-pointer transition-all active:scale-95">
-        <span className="text-2xl">📸</span>
-        <span className="text-base">Adicionar refeição</span>
-        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
-      </label>
+      {/* Botão adicionar */}
+      <div className="px-5">
+        <label className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl cursor-pointer font-black text-white transition-all active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
+          <span className="text-xl">📸</span>
+          <span>Adicionar refeição</span>
+          <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+        </label>
+      </div>
 
     </div>
   )

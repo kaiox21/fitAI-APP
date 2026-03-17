@@ -9,7 +9,7 @@ import BottomNav from './components/BottomNav'
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="bg-gray-950 min-h-screen max-w-md mx-auto">
+      <div className="bg-dark min-h-screen max-w-md mx-auto relative">
         <Routes>
           <Route path="/" element={<Navigate to="/home" />} />
           <Route path="/home" element={<Home />} />
