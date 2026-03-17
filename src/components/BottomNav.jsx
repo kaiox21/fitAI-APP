@@ -10,6 +10,7 @@ export default function BottomNav() {
     { label: 'Diário', icon: '📖', route: '/diary' },
     { label: 'Medidas', icon: '📏', route: '/measures' },
     { label: 'Treinos', icon: '🏋️', route: '/workouts' },
+    { label: 'Perfil', icon: '👤', route: '/profile' },
   ]
 
   return (

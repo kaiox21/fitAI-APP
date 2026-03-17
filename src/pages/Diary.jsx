@@ -8,7 +8,7 @@ const MEAL_TYPES = [
   { label: 'Lanche', icon: '🥪' },
 ]
 
-export default function Diary() {
+export default function Diario() {
   const { meals, totalKcal, user } = useApp()
   const navigate = useNavigate()
   const progress = Math.min((totalKcal / user.kcalGoal) * 100, 100)
@@ -52,7 +52,7 @@ export default function Diary() {
                 </div>
               </div>
               <button
-                onClick={() => navigate('/camera')}
+                onClick={() => navigate('/home')}
                 className="w-8 h-8 bg-green-400 bg-opacity-20 text-green-400 rounded-lg font-bold text-lg"
               >
                 +
@@ -80,7 +80,7 @@ export default function Diary() {
       })}
 
       <button
-        onClick={() => navigate('/camera')}
+        onClick={() => navigate('/home')}
         className="flex items-center justify-center gap-3 w-full bg-green-400 hover:bg-green-300 text-black font-bold py-4 rounded-2xl transition-all active:scale-95"
       >
         <span className="text-xl">📸</span>

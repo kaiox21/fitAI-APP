@@ -14,6 +14,7 @@ export function AppProvider({ children }) {
   })
 
   const [meals, setMeals] = useState([])
+  const [measures, setMeasures] = useState([])
 
   function addMeal(meal) {
     const hour = new Date().getHours()
@@ -31,6 +32,13 @@ export function AppProvider({ children }) {
     }])
   }
 
+  function addMeasure(entry) {
+    setMeasures(prev => [...prev, {
+      ...entry,
+      date: new Date().toISOString().split('T')[0]
+    }])
+  }
+
   const totalKcal = meals.reduce((sum, m) => sum + m.kcal, 0)
   const totalProt = meals.reduce((sum, m) => sum + m.prot, 0)
   const totalCarb = meals.reduce((sum, m) => sum + m.carb, 0)
@@ -40,6 +48,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       user, setUser,
       meals, addMeal,
+      measures, addMeasure,
       totalKcal, totalProt, totalCarb, totalFat,
     }}>
       {children}
