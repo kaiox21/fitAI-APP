@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 const WORKOUTS = [
   {
-    day: 'Segunda', title: 'Treino A — Peito & Tríceps', icon: '💪',
+    day: 'Segunda', title: 'Peito & Tríceps', icon: '💪', tag: 'Treino A',
     exercises: [
       { name: 'Supino Reto', sets: '4', reps: '12', rest: '60s' },
       { name: 'Crucifixo com Halter', sets: '3', reps: '15', rest: '45s' },
@@ -12,7 +12,7 @@ const WORKOUTS = [
     ]
   },
   {
-    day: 'Quarta', title: 'Treino B — Costas & Bíceps', icon: '🏋️',
+    day: 'Quarta', title: 'Costas & Bíceps', icon: '🏋️', tag: 'Treino B',
     exercises: [
       { name: 'Puxada Frontal', sets: '4', reps: '12', rest: '60s' },
       { name: 'Remada Curvada', sets: '4', reps: '12', rest: '60s' },
@@ -22,7 +22,7 @@ const WORKOUTS = [
     ]
   },
   {
-    day: 'Sexta', title: 'Treino C — Pernas', icon: '🦵',
+    day: 'Sexta', title: 'Pernas', icon: '🦵', tag: 'Treino C',
     exercises: [
       { name: 'Agachamento Livre', sets: '4', reps: '15', rest: '90s' },
       { name: 'Leg Press', sets: '4', reps: '15', rest: '90s' },
@@ -32,7 +32,7 @@ const WORKOUTS = [
     ]
   },
   {
-    day: 'Sábado', title: 'Treino D — Ombro & Abdômen', icon: '🔥',
+    day: 'Sábado', title: 'Ombro & Abdômen', icon: '🔥', tag: 'Treino D',
     exercises: [
       { name: 'Desenvolvimento com Halter', sets: '4', reps: '12', rest: '60s' },
       { name: 'Elevação Lateral', sets: '3', reps: '15', rest: '45s' },
@@ -57,70 +57,98 @@ export default function Workouts() {
     return WORKOUTS[wi].exercises.every((_, ei) => done[`${wi}-${ei}`])
   }
 
+  function markAllDone(wi) {
+    WORKOUTS[wi].exercises.forEach((_, ei) => {
+      setDone(prev => ({ ...prev, [`${wi}-${ei}`]: true }))
+    })
+  }
+
+  const todayIndex = [1, 3, 5, 6].indexOf(new Date().getDay())
+
   return (
-    <div className="p-4 pb-24">
-      <h1 className="text-white text-xl font-bold mb-6">Treinos</h1>
+    <div className="pb-24">
 
-      {WORKOUTS.map((wt, wi) => (
-        <div key={wi} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden mb-4">
+      <div className="px-5 pt-8 pb-6">
+        <h1 className="text-white text-3xl font-black">Treinos.</h1>
+        <p className="text-gray-500 text-sm mt-1">Plano personalizado semanal</p>
+      </div>
 
-          <div
-            className="flex items-center justify-between p-4 cursor-pointer"
-            onClick={() => setOpen(open === wi ? null : wi)}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{wt.icon}</span>
-              <div>
-                <p className="text-white font-bold">{wt.title}</p>
-                <p className="text-gray-400 text-xs">{wt.day} · {wt.exercises.length} exercícios</p>
-              </div>
-            </div>
-            <span className="text-gray-400">{open === wi ? '▲' : '▼'}</span>
-          </div>
+      <div className="px-5 flex flex-col gap-4">
+        {WORKOUTS.map((wt, wi) => (
+          <div key={wi} className="rounded-2xl overflow-hidden" style={{ background: '#1A1A1A' }}>
 
-          {open === wi && (
-            <div className="border-t border-gray-800">
-              {wt.exercises.map((ex, ei) => (
-                <div key={ei} className="flex items-center gap-3 p-3 border-b border-gray-800 last:border-0">
-                  <button
-                    onClick={() => toggleExercise(wi, ei)}
-                    className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                      done[`${wi}-${ei}`] ? 'bg-green-400 border-green-400' : 'border-gray-600'
-                    }`}
-                  >
-                    {done[`${wi}-${ei}`] && <span className="text-black text-xs font-bold">✓</span>}
-                  </button>
-                  <div className="flex-1">
-                    <p className={`text-sm font-medium ${done[`${wi}-${ei}`] ? 'text-gray-500 line-through' : 'text-white'}`}>
-                      {ex.name}
-                    </p>
-                    <p className="text-gray-400 text-xs">{ex.sets} séries · {ex.reps} reps · Descanso: {ex.rest}</p>
+            <div
+              className="p-4 cursor-pointer"
+              onClick={() => setOpen(open === wi ? null : wi)}
+              style={wi === todayIndex ? { background: 'linear-gradient(135deg, #7C3AED22, #5B21B611)' } : {}}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                    style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
+                    {wt.icon}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-black">{wt.title}</p>
+                      {wi === todayIndex && (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                          style={{ background: 'rgba(124,58,237,0.3)', color: '#A78BFA' }}>
+                          Hoje
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-gray-500 text-xs">{wt.tag} · {wt.day} · {wt.exercises.length} exercícios</p>
                   </div>
                 </div>
-              ))}
-
-              <div className="p-4">
-                {isWorkoutDone(wi) ? (
-                  <div className="bg-green-400 bg-opacity-10 border border-green-400 border-opacity-30 rounded-xl p-3 text-center">
-                    <p className="text-green-400 font-bold">✅ Treino concluído!</p>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      WORKOUTS[wi].exercises.forEach((_, ei) => {
-                        setDone(prev => ({ ...prev, [`${wi}-${ei}`]: true }))
-                      })
-                    }}
-                    className="w-full py-3 bg-green-400 text-black font-bold rounded-xl"
-                  >
-                    Marcar tudo como concluído
-                  </button>
-                )}
+                <span className="text-gray-500">{open === wi ? '▲' : '▼'}</span>
               </div>
             </div>
-          )}
-        </div>
-      ))}
+
+            {open === wi && (
+              <div style={{ borderTop: '1px solid #2A2A2A' }}>
+                {wt.exercises.map((ex, ei) => (
+                  <div key={ei} className="flex items-center gap-3 p-4"
+                    style={{ borderBottom: '1px solid #2A2A2A' }}>
+                    <button
+                      onClick={() => toggleExercise(wi, ei)}
+                      className="w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                      style={{
+                        background: done[`${wi}-${ei}`] ? '#7C3AED' : 'transparent',
+                        borderColor: done[`${wi}-${ei}`] ? '#7C3AED' : '#2A2A2A'
+                      }}
+                    >
+                      {done[`${wi}-${ei}`] && <span className="text-white text-xs font-black">✓</span>}
+                    </button>
+                    <div className="flex-1">
+                      <p className={`text-sm font-bold ${done[`${wi}-${ei}`] ? 'text-gray-600 line-through' : 'text-white'}`}>
+                        {ex.name}
+                      </p>
+                      <p className="text-gray-500 text-xs mt-0.5">{ex.sets} séries · {ex.reps} reps · Descanso: {ex.rest}</p>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="p-4">
+                  {isWorkoutDone(wi) ? (
+                    <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)' }}>
+                      <p className="text-purple-400 font-black">✅ Treino concluído!</p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => markAllDone(wi)}
+                      className="w-full py-3 rounded-xl text-white font-black"
+                      style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}
+                    >
+                      Marcar tudo como concluído
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
