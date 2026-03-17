@@ -16,9 +16,16 @@ export function AppProvider({ children }) {
   const [meals, setMeals] = useState([])
 
   function addMeal(meal) {
+    const hour = new Date().getHours()
+    let type = 'Lanche'
+    if (hour >= 6 && hour < 10) type = 'Café da manhã'
+    else if (hour >= 11 && hour < 15) type = 'Almoço'
+    else if (hour >= 18 && hour < 22) type = 'Jantar'
+
     setMeals(prev => [...prev, {
       ...meal,
       id: Date.now(),
+      type,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     }])

@@ -8,7 +8,6 @@ export default function BottomNav() {
   const items = [
     { label: 'Início', icon: '🏠', route: '/home' },
     { label: 'Diário', icon: '📖', route: '/diary' },
-    { label: 'Foto', icon: '📸', route: '/camera' },
     { label: 'Medidas', icon: '📏', route: '/measures' },
     { label: 'Treinos', icon: '🏋️', route: '/workouts' },
   ]

@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Home from './pages/Home'
 import Diary from './pages/Diary'
-import Camera from './pages/Camera'
 import Measures from './pages/Measures'
 import Workouts from './pages/Workouts'
 import Profile from './pages/Profile'
@@ -15,7 +14,6 @@ export default function App() {
           <Route path="/" element={<Navigate to="/home" />} />
           <Route path="/home" element={<Home />} />
           <Route path="/diary" element={<Diary />} />
-          <Route path="/camera" element={<Camera />} />
           <Route path="/measures" element={<Measures />} />
           <Route path="/workouts" element={<Workouts />} />
           <Route path="/profile" element={<Profile />} />
