@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useApp } from './context/AppContext'
 import Home from './pages/Home'
 import Diary from './pages/Diary'
 import Measures from './pages/Measures'
@@ -9,43 +10,33 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import BottomNav from './components/BottomNav'
 
+function PrivateRoute({ children }) {
+  const { user } = useApp()
+  return user ? (
+    <div className="min-h-screen max-w-md mx-auto relative" style={{ background: '#0F0F0F' }}>
+      {children}
+      <BottomNav />
+    </div>
+  ) : <Navigate to="/" />
+}
+
+function PublicRoute({ children }) {
+  const { user } = useApp()
+  return !user ? children : <Navigate to="/home" />
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Welcome />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/home" element={
-          <div className="bg-dark min-h-screen max-w-md mx-auto relative">
-            <Home />
-            <BottomNav />
-          </div>
-        } />
-        <Route path="/diary" element={
-          <div className="bg-dark min-h-screen max-w-md mx-auto relative">
-            <Diary />
-            <BottomNav />
-          </div>
-        } />
-        <Route path="/measures" element={
-          <div className="bg-dark min-h-screen max-w-md mx-auto relative">
-            <Measures />
-            <BottomNav />
-          </div>
-        } />
-        <Route path="/workouts" element={
-          <div className="bg-dark min-h-screen max-w-md mx-auto relative">
-            <Workouts />
-            <BottomNav />
-          </div>
-        } />
-        <Route path="/profile" element={
-          <div className="bg-dark min-h-screen max-w-md mx-auto relative">
-            <Profile />
-            <BottomNav />
-          </div>
-        } />
+        <Route path="/" element={<PublicRoute><Welcome /></PublicRoute>} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+        <Route path="/diary" element={<PrivateRoute><Diary /></PrivateRoute>} />
+        <Route path="/measures" element={<PrivateRoute><Measures /></PrivateRoute>} />
+        <Route path="/workouts" element={<PrivateRoute><Workouts /></PrivateRoute>} />
+        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   )

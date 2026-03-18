@@ -5,15 +5,7 @@ const AppContext = createContext()
 export function AppProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('fitai_user')
-    return saved ? JSON.parse(saved) : {
-      name: 'Atleta',
-      age: 25,
-      weight: 75,
-      height: 175,
-      sex: 'M',
-      goal: 'loss',
-      kcalGoal: 2000,
-    }
+    return saved ? JSON.parse(saved) : null
   })
 
   const [meals, setMeals] = useState(() => {
@@ -61,6 +53,13 @@ export function AppProvider({ children }) {
     }])
   }
 
+  function logout() {
+    setUser(null)
+    setMeals([])
+    setMeasures([])
+    localStorage.clear()
+  }
+
   const today = new Date().toISOString().split('T')[0]
   const todayMeals = meals.filter(m => m.date === today)
 
@@ -75,6 +74,7 @@ export function AppProvider({ children }) {
       meals, addMeal,
       measures, addMeasure,
       totalKcal, totalProt, totalCarb, totalFat,
+      logout,
     }}>
       {children}
     </AppContext.Provider>

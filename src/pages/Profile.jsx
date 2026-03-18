@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 
 export default function Profile() {
-  const { user, setUser } = useApp()
+  const { user, setUser, logout } = useApp()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({ ...user })
 
@@ -19,7 +19,6 @@ export default function Profile() {
   }
 
   function handleSave() {
-    const tmb = calcTMB()
     const tdee = calcTDEE()
     let kcalGoal = tdee
     if (form.goal === 'loss') kcalGoal = tdee - 500
@@ -47,7 +46,6 @@ export default function Profile() {
         </button>
       </div>
 
-      {/* Avatar */}
       <div className="mx-5 rounded-2xl p-5 mb-4 flex items-center gap-4" style={{ background: '#1A1A1A' }}>
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black flex-shrink-0"
           style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)' }}>
@@ -59,7 +57,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Stats roxos */}
       <div className="mx-5 grid grid-cols-3 gap-3 mb-4">
         {[
           { label: 'TMB', value: `${calcTMB()}`, unit: 'kcal' },
@@ -153,6 +150,21 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      <div className="mx-5 mt-4">
+        <button
+          onClick={() => {
+            if (window.confirm('Tem certeza que quer sair da conta?')) {
+              logout()
+            }
+          }}
+          className="w-full py-4 rounded-2xl text-white font-black"
+          style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}
+        >
+          Sair da conta
+        </button>
+      </div>
+
     </div>
   )
 }
