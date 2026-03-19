@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { supabase } from '../lib/supabase'
 
 const STEPS = ['Conta', 'Corpo', 'Objetivo']
 
@@ -8,6 +9,8 @@ export default function Register() {
   const navigate = useNavigate()
   const { setUser } = useApp()
   const [step, setStep] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
   const [form, setForm] = useState({
     name: '', email: '', password: '',
     age: '', weight: '', height: '', sex: 'M',
@@ -31,19 +34,77 @@ export default function Register() {
     return Math.round(tdee)
   }
 
-  function handleFinish() {
-    setUser({
-      name: form.name,
-      email: form.email,
-      age: form.age,
-      weight: form.weight,
-      height: form.height,
-      sex: form.sex,
-      goal: form.goal,
-      activity: form.activity,
-      kcalGoal: calcKcalGoal()
-    })
-    navigate('/home')
+  async function handleFinish() {
+    setLoading(true)
+    setError(null)
+    try {
+      // 1. Cria o usuário no Supabase Auth
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+      })
+
+      console.log('Auth data:', JSON.stringify(data))
+      console.log('Auth error:', JSON.stringify(authError))
+
+      if (authError) {
+        setError('Erro ao criar conta: ' + authError.message)
+        return
+      }
+
+      if (!data?.user?.id) {
+        setError('Usuário não foi criado. Tente novamente.')
+        return
+      }
+
+      const userId = data.user.id
+      const kcalGoal = calcKcalGoal()
+
+      console.log('userId:', userId)
+      console.log('kcalGoal:', kcalGoal)
+
+      // 2. Salva o perfil na tabela profiles
+      const { data: profileData, error: profileError } = await supabase.from('profiles').insert({
+        id: userId,
+        name: form.name,
+        age: parseInt(form.age),
+        sex: form.sex,
+        weight: parseFloat(form.weight),
+        height: parseFloat(form.height),
+        goal: form.goal,
+        activity: parseFloat(form.activity),
+        kcal_goal: kcalGoal,
+      }).select()
+
+      console.log('Profile data:', JSON.stringify(profileData))
+      console.log('Profile error:', JSON.stringify(profileError))
+
+      if (profileError) {
+        setError('Erro ao salvar perfil: ' + profileError.message)
+        return
+      }
+
+      // 3. Atualiza o contexto local
+      setUser({
+        id: userId,
+        name: form.name,
+        email: form.email,
+        age: form.age,
+        weight: form.weight,
+        height: form.height,
+        sex: form.sex,
+        goal: form.goal,
+        activity: form.activity,
+        kcalGoal,
+      })
+
+      navigate('/home')
+    } catch (err) {
+      console.log('Catch error:', err)
+      setError('Erro inesperado. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const inputStyle = {
@@ -194,12 +255,19 @@ export default function Register() {
         </div>
       )}
 
+      {error && (
+        <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '0.85rem', color: '#F87171', letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: '12px' }}>
+          {error}
+        </p>
+      )}
+
       <button
         onClick={() => step < 2 ? setStep(s => s + 1) : handleFinish()}
-        className="w-full py-4 rounded-full text-white font-bold mt-6"
-        style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+        disabled={loading}
+        className="w-full py-4 rounded-full text-white font-bold mt-6 transition-all"
+        style={{ background: loading ? '#4B5563' : 'linear-gradient(135deg, #7C3AED, #5B21B6)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
       >
-        {step < 2 ? 'Continuar' : 'Começar agora'}
+        {loading ? 'Criando conta...' : step < 2 ? 'Continuar' : 'Começar agora'}
       </button>
 
       {step === 0 && (

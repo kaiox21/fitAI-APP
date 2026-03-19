@@ -31,7 +31,7 @@ const CameraIcon = () => (
 )
 
 export default function Home() {
-  const { user, totalKcal, totalProt, totalCarb, totalFat, meals, addMeal, totalBurned, dailyDeficit, weeklyData } = useApp()
+  const { user, totalKcal, meals, addMeal, tdeeBase, burnedFromWorkout, totalBurned, dailyDeficit, weeklyData } = useApp()
   const navigate = useNavigate()
   const remaining = Math.max(user.kcalGoal - totalKcal, 0)
   const progress = Math.min((totalKcal / user.kcalGoal) * 100, 100)
@@ -39,15 +39,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [portion, setPortion] = useState(1)
-
-  const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-  const today = new Date().getDay()
-  const weekData = weekDays.map((day, i) => ({
-    day,
-    kcal: i === today ? totalKcal : Math.floor(Math.random() * 1800 + 200),
-    isToday: i === today,
-  }))
-  const maxKcal = Math.max(...weekData.map(d => d.kcal), 1)
 
   const weeklyDeficit = weeklyData.reduce((sum, d) => sum + d.deficit, 0)
   const weeklyConsumed = weeklyData.reduce((sum, d) => sum + d.consumed, 0)
@@ -131,9 +122,25 @@ export default function Home() {
       {/* Stats cards */}
       <div className="px-5 grid grid-cols-3 gap-3 mb-5">
         {[
-          { label: 'Consumido', value: totalKcal, icon: <FireIcon /> },
-          { label: 'Queimado', value: totalBurned, icon: <MuscleIcon /> },
-          { label: 'Restante', value: remaining, icon: <ZapIcon /> },
+          {
+            label: 'Consumido',
+            value: totalKcal,
+            icon: <FireIcon />,
+            sub: null
+          },
+          {
+            label: 'Queimado',
+            value: tdeeBase,
+            icon: <MuscleIcon />,
+            // mostra extra de treino se houver
+            sub: burnedFromWorkout > 0 ? `+${burnedFromWorkout} treino` : 'sem treino hoje'
+          },
+          {
+            label: 'Restante',
+            value: remaining,
+            icon: <ZapIcon />,
+            sub: null
+          },
         ].map((stat, i) => (
           <div key={i} className="rounded-2xl p-3"
             style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
@@ -142,6 +149,11 @@ export default function Home() {
               {stat.value}
             </p>
             <p className="text-purple-200 text-xs mt-1 uppercase tracking-wider">{stat.label}</p>
+            {stat.sub && (
+              <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '0.6rem', color: '#DDD6FE', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {stat.sub}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -164,7 +176,7 @@ export default function Home() {
               {dailyDeficit > 0 ? '+' : ''}{dailyDeficit} kcal
             </p>
             <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', marginTop: '4px' }}>
-              {dailyDeficit > 0 ? 'Você está em déficit' : dailyDeficit < 0 ? 'Você está em superávit' : 'Registre treinos para calcular'}
+              {dailyDeficit > 0 ? `${totalBurned} gastos − ${totalKcal} consumidos` : dailyDeficit < 0 ? `${totalKcal} consumidos − ${totalBurned} gastos` : 'metabolismo + treinos vs refeições'}
             </p>
           </div>
           <div className="text-right">

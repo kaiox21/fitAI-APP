@@ -2,6 +2,20 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const AppContext = createContext()
 
+function calcTMB(user) {
+  const w = parseFloat(user.weight)
+  const h = parseFloat(user.height)
+  const a = parseInt(user.age)
+  if (user.sex === 'M') return 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
+  return 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
+}
+
+function calcTDEEBase(user) {
+  // TDEE base = só metabolismo basal × fator sedentário (1.2)
+  // O treino é contabilizado separadamente via burnedFromWorkout
+  return Math.round(calcTMB(user) * 1.2)
+}
+
 export function AppProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('fitai_user')
@@ -73,9 +87,20 @@ export function AppProvider({ children }) {
   const totalProt = todayMeals.reduce((sum, m) => sum + m.prot, 0)
   const totalCarb = todayMeals.reduce((sum, m) => sum + m.carb, 0)
   const totalFat = todayMeals.reduce((sum, m) => sum + m.fat, 0)
-  const totalBurned = todayLogs.reduce((sum, w) => sum + w.caloriesBurned, 0)
+
+  // Calorias queimadas só no treino hoje
+  const burnedFromWorkout = todayLogs.reduce((sum, w) => sum + w.caloriesBurned, 0)
+
+  // TDEE base = metabolismo × 1.2 (sem contar treino)
+  const tdeeBase = user ? calcTDEEBase(user) : 0
+
+  // Gasto total = TDEE base + treino
+  const totalBurned = tdeeBase + burnedFromWorkout
+
+  // Déficit = gasto total - consumido
   const dailyDeficit = totalBurned - totalKcal
 
+  // Dados semanais — só conta dias com refeição ou treino registrado
   const weeklyData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
@@ -83,8 +108,13 @@ export function AppProvider({ children }) {
     const dayMeals = meals.filter(m => m.date === key)
     const dayLogs = workoutLogs.filter(w => w.date === key)
     const consumed = dayMeals.reduce((s, m) => s + m.kcal, 0)
-    const burned = dayLogs.reduce((s, w) => s + w.caloriesBurned, 0)
-    return { date: key, consumed, burned, deficit: burned - consumed }
+    const workoutBurned = dayLogs.reduce((s, w) => s + w.caloriesBurned, 0)
+
+    // Só inclui TDEE base se o dia tiver algum registro
+    const hasData = dayMeals.length > 0 || dayLogs.length > 0
+    const burned = hasData ? (user ? calcTDEEBase(user) : 0) + workoutBurned : 0
+
+    return { date: key, consumed, burned, deficit: hasData ? burned - consumed : 0 }
   })
 
   return (
@@ -94,7 +124,7 @@ export function AppProvider({ children }) {
       measures, addMeasure,
       workoutLogs, addWorkoutLog, removeWorkoutLog,
       totalKcal, totalProt, totalCarb, totalFat,
-      totalBurned, dailyDeficit,
+      burnedFromWorkout, totalBurned, tdeeBase, dailyDeficit,
       weeklyData, logout,
     }}>
       {children}

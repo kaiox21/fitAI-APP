@@ -1,13 +1,14 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
+import { useApp } from '../context/AppContext'
 
 export default function Login() {
   const navigate = useNavigate()
+  const { setUser } = useApp()
   const [form, setForm] = useState({ email: '', password: '' })
-
-  function handleLogin() {
-    navigate('/home')
-  }
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   const inputStyle = {
     background: 'transparent',
@@ -21,6 +22,57 @@ export default function Login() {
     width: '100%',
     outline: 'none',
     fontSize: '1rem',
+  }
+
+  async function handleLogin() {
+    if (!form.email || !form.password) {
+      setError('Preencha todos os campos.')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      })
+
+      if (authError) {
+        setError('Email ou senha incorretos.')
+        return
+      }
+
+      // Busca o perfil do usuário no banco
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profileError || !profile) {
+        setError('Perfil não encontrado.')
+        return
+      }
+
+      setUser({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email || form.email,
+        age: profile.age,
+        weight: profile.weight,
+        height: profile.height,
+        sex: profile.sex,
+        goal: profile.goal,
+        activity: profile.activity,
+        kcalGoal: profile.kcal_goal,
+      })
+
+      navigate('/home')
+    } catch {
+      setError('Erro ao fazer login. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -53,15 +105,22 @@ export default function Login() {
             onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
           />
         </div>
+
+        {error && (
+          <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '0.85rem', color: '#F87171', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            {error}
+          </p>
+        )}
       </div>
 
       <div className="mt-auto">
         <button
           onClick={handleLogin}
-          className="w-full py-4 rounded-full text-white font-bold mb-4"
-          style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+          disabled={loading}
+          className="w-full py-4 rounded-full text-white font-bold mb-4 transition-all"
+          style={{ background: loading ? '#4B5563' : 'linear-gradient(135deg, #7C3AED, #5B21B6)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
         >
-          Sign In
+          {loading ? 'Entrando...' : 'Sign In'}
         </button>
 
         <p className="text-center text-gray-500 text-sm">

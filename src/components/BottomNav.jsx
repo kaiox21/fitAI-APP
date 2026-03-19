@@ -41,7 +41,7 @@ const ProfileIcon = ({ active }) => (
 
 const items = [
   { label: 'Início', icon: HomeIcon, route: '/home' },
-  { label: 'Diário', icon: DiaryIcon, route: '/diary' },
+  { label: 'Histórico', icon: DiaryIcon, route: '/diary' },
   { label: 'Medidas', icon: MeasuresIcon, route: '/measures' },
   { label: 'Treinos', icon: WorkoutsIcon, route: '/workouts' },
   { label: 'Perfil', icon: ProfileIcon, route: '/profile' },
