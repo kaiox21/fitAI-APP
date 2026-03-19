@@ -60,27 +60,27 @@ export default function Home() {
     reader.onload = async (e) => {
       const base64 = e.target.result.split(',')[1]
       try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 1000,
-            messages: [{
-              role: 'user',
-              content: [
-                { type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } },
-                { type: 'text', text: 'Analise este alimento e responda APENAS com JSON sem texto extra: {"name":"nome em portugues","kcal":0,"prot":0,"carb":0,"fat":0,"confidence":0}' }
-              ]
-            }]
-          })
-        })
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { inline_data: { mime_type: file.type, data: base64 } },
+                  { text: "Você é um nutricionista especializado em análise de alimentos por imagem. Analise esta foto com máxima precisão e identifique todos os alimentos visíveis. Estime as calorias e macronutrientes para a porção visível na imagem. Responda APENAS com JSON sem texto extra, confidence de 0 a 100: {\"name\":\"nome completo do prato em portugues\",\"kcal\":0,\"prot\":0,\"carb\":0,\"fat\":0,\"confidence\":0}" }
+                ]
+              }]
+            })
+          }
+        )
         const data = await response.json()
-        const text = data.content?.find(b => b.type === 'text')?.text || ''
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
         const food = JSON.parse(text.replace(/```json|```/g, '').trim())
         setResult(food)
       } catch {
-        setResult({ name: 'Frango grelhado', kcal: 165, prot: 31, carb: 0, fat: 4, confidence: 90 })
+        setResult({ name: 'Erro ao analisar', kcal: 0, prot: 0, carb: 0, fat: 0, confidence: 0 })
       } finally {
         setLoading(false)
       }
