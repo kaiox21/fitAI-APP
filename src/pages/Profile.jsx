@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 
+const displayFont = { fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase' }
+
 export default function Profile() {
   const { user, setUser, logout } = useApp()
   const [editing, setEditing] = useState(false)
@@ -27,109 +29,127 @@ export default function Profile() {
     setEditing(false)
   }
 
-  const goalLabels = { loss: '📉 Emagrecer', gain: '💪 Ganhar massa', maint: '⚖️ Manter peso' }
+  const goalLabels = { loss: 'Emagrecer', gain: 'Ganhar massa', maint: 'Manter peso' }
+
+  const inputStyle = {
+    background: 'transparent',
+    borderBottom: '1px solid #3A3A3A',
+    borderTop: 'none',
+    borderLeft: 'none',
+    borderRight: 'none',
+    borderRadius: 0,
+    color: 'white',
+    padding: '10px 0',
+    width: '100%',
+    outline: 'none',
+    fontSize: '1rem',
+  }
 
   return (
     <div className="pb-24">
 
       <div className="px-5 pt-8 pb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-white text-3xl font-black">Perfil.</h1>
-          <p className="text-gray-500 text-sm mt-1">Suas informações</p>
+          <p className="text-gray-500 text-xs uppercase tracking-widest">Suas informações</p>
+          <h1 style={{ ...displayFont, fontSize: '2.2rem', fontWeight: 900, color: 'white', lineHeight: 1.1 }}>
+            Perfil.
+          </h1>
         </div>
         <button
           onClick={() => editing ? handleSave() : setEditing(true)}
-          className="px-4 py-2 rounded-xl text-white font-bold text-sm"
-          style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}
+          className="px-4 py-2 rounded-full text-white font-bold"
+          style={{ background: editing ? 'linear-gradient(135deg, #7C3AED, #5B21B6)' : '#1A1A1A', border: editing ? 'none' : '1px solid #2A2A2A', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '0.9rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}
         >
           {editing ? 'Salvar' : 'Editar'}
         </button>
       </div>
 
+      {/* Avatar */}
       <div className="mx-5 rounded-2xl p-5 mb-4 flex items-center gap-4" style={{ background: '#1A1A1A' }}>
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)' }}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.8rem' }}>
           {user.name[0].toUpperCase()}
         </div>
         <div>
-          <p className="text-white text-xl font-black">{user.name}</p>
-          <p className="text-purple-400 text-sm mt-1">{goalLabels[user.goal]}</p>
+          <p style={{ ...displayFont, fontSize: '1.4rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>{user.name}</p>
+          <p style={{ ...displayFont, fontSize: '0.75rem', color: '#A78BFA', letterSpacing: '0.05em', marginTop: '4px' }}>
+            {goalLabels[user.goal]}
+          </p>
         </div>
       </div>
 
+      {/* Stats */}
       <div className="mx-5 grid grid-cols-3 gap-3 mb-4">
         {[
-          { label: 'TMB', value: `${calcTMB()}`, unit: 'kcal' },
-          { label: 'TDEE', value: `${calcTDEE()}`, unit: 'kcal' },
-          { label: 'Meta', value: `${user.kcalGoal}`, unit: 'kcal' },
+          { label: 'TMB', value: calcTMB(), unit: 'kcal' },
+          { label: 'TDEE', value: calcTDEE(), unit: 'kcal' },
+          { label: 'Meta', value: user.kcalGoal, unit: 'kcal' },
         ].map(s => (
           <div key={s.label} className="rounded-2xl p-3 text-center"
             style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
-            <p className="text-white font-black text-lg">{s.value}</p>
-            <p className="text-purple-200 text-xs">{s.unit}</p>
-            <p className="text-purple-300 text-xs mt-1">{s.label}</p>
+            <p style={{ ...displayFont, fontSize: '1.3rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>{s.value}</p>
+            <p style={{ ...displayFont, fontSize: '0.6rem', color: '#DDD6FE', letterSpacing: '0.05em', marginTop: '2px' }}>{s.unit}</p>
+            <p style={{ ...displayFont, fontSize: '0.6rem', color: '#C4B5FD', letterSpacing: '0.08em', marginTop: '2px' }}>{s.label}</p>
           </div>
         ))}
       </div>
 
       {editing ? (
-        <div className="mx-5 rounded-2xl p-5 mb-4 flex flex-col gap-3" style={{ background: '#1A1A1A' }}>
-          <div>
-            <p className="text-gray-500 text-xs mb-1">Nome</p>
-            <input
-              className="w-full rounded-xl px-4 py-3 outline-none text-white font-bold"
-              style={{ background: '#111' }}
-              value={form.name}
-              onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="mx-5 rounded-2xl p-5 mb-4" style={{ background: '#1A1A1A' }}>
+          <div className="flex flex-col gap-5">
             <div>
-              <p className="text-gray-500 text-xs mb-1">Idade</p>
-              <input type="number" className="w-full rounded-xl px-4 py-3 outline-none text-white font-bold"
-                style={{ background: '#111' }}
-                value={form.age} onChange={e => setForm(p => ({ ...p, age: e.target.value }))} />
+              <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em', marginBottom: '4px' }}>Nome</p>
+              <input style={inputStyle} value={form.name}
+                onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em', marginBottom: '4px' }}>Idade</p>
+                <input type="number" style={inputStyle} value={form.age}
+                  onChange={e => setForm(p => ({ ...p, age: e.target.value }))} />
+              </div>
+              <div>
+                <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em', marginBottom: '4px' }}>Sexo</p>
+                <select style={inputStyle} value={form.sex}
+                  onChange={e => setForm(p => ({ ...p, sex: e.target.value }))}>
+                  <option value="M">Masculino</option>
+                  <option value="F">Feminino</option>
+                </select>
+              </div>
+              <div>
+                <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em', marginBottom: '4px' }}>Peso (kg)</p>
+                <input type="number" style={inputStyle} value={form.weight}
+                  onChange={e => setForm(p => ({ ...p, weight: e.target.value }))} />
+              </div>
+              <div>
+                <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em', marginBottom: '4px' }}>Altura (cm)</p>
+                <input type="number" style={inputStyle} value={form.height}
+                  onChange={e => setForm(p => ({ ...p, height: e.target.value }))} />
+              </div>
             </div>
             <div>
-              <p className="text-gray-500 text-xs mb-1">Sexo</p>
-              <select className="w-full rounded-xl px-4 py-3 outline-none text-white font-bold"
-                style={{ background: '#111' }}
-                value={form.sex} onChange={e => setForm(p => ({ ...p, sex: e.target.value }))}>
-                <option value="M">Masculino</option>
-                <option value="F">Feminino</option>
-              </select>
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs mb-1">Peso (kg)</p>
-              <input type="number" className="w-full rounded-xl px-4 py-3 outline-none text-white font-bold"
-                style={{ background: '#111' }}
-                value={form.weight} onChange={e => setForm(p => ({ ...p, weight: e.target.value }))} />
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs mb-1">Altura (cm)</p>
-              <input type="number" className="w-full rounded-xl px-4 py-3 outline-none text-white font-bold"
-                style={{ background: '#111' }}
-                value={form.height} onChange={e => setForm(p => ({ ...p, height: e.target.value }))} />
-            </div>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs mb-2">Objetivo</p>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 'loss', label: '📉 Emagrecer' },
-                { value: 'gain', label: '💪 Ganhar' },
-                { value: 'maint', label: '⚖️ Manter' },
-              ].map(g => (
-                <button key={g.value}
-                  onClick={() => setForm(p => ({ ...p, goal: g.value }))}
-                  className="py-2 px-2 rounded-xl text-xs font-black transition-all"
-                  style={{
-                    background: form.goal === g.value ? 'linear-gradient(135deg, #7C3AED, #5B21B6)' : '#111',
-                    color: form.goal === g.value ? 'white' : '#6B7280'
-                  }}>
-                  {g.label}
-                </button>
-              ))}
+              <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em', marginBottom: '8px' }}>Objetivo</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'loss', label: 'Emagrecer' },
+                  { value: 'gain', label: 'Ganhar' },
+                  { value: 'maint', label: 'Manter' },
+                ].map(g => (
+                  <button key={g.value}
+                    onClick={() => setForm(p => ({ ...p, goal: g.value }))}
+                    className="py-2 rounded-full font-black transition-all"
+                    style={{
+                      background: form.goal === g.value ? '#7C3AED' : '#2A2A2A',
+                      color: form.goal === g.value ? 'white' : '#6B7280',
+                      fontFamily: 'Barlow Condensed, sans-serif',
+                      fontSize: '0.8rem',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase'
+                    }}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -143,23 +163,21 @@ export default function Profile() {
               { label: 'Altura', value: `${user.height} cm` },
             ].map(item => (
               <div key={item.label}>
-                <p className="text-gray-500 text-xs">{item.label}</p>
-                <p className="text-white font-black text-lg mt-1">{item.value}</p>
+                <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', letterSpacing: '0.1em' }}>{item.label}</p>
+                <p style={{ ...displayFont, fontSize: '1.3rem', fontWeight: 800, color: 'white', marginTop: '2px' }}>{item.value}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <div className="mx-5 mt-4">
+      <div className="mx-5">
         <button
           onClick={() => {
-            if (window.confirm('Tem certeza que quer sair da conta?')) {
-              logout()
-            }
+            if (window.confirm('Tem certeza que quer sair da conta?')) logout()
           }}
-          className="w-full py-4 rounded-2xl text-white font-black"
-          style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}
+          className="w-full py-4 rounded-full text-white font-bold uppercase"
+          style={{ background: '#1A1A1A', border: '1px solid #2A2A2A', fontFamily: 'Barlow Condensed, sans-serif', letterSpacing: '0.08em', fontSize: '0.95rem' }}
         >
           Sair da conta
         </button>

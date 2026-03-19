@@ -2,10 +2,39 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 
+const displayFont = { fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase' }
+
+const FireIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+  </svg>
+)
+
+const MuscleIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+    <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+  </svg>
+)
+
+const ZapIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+  </svg>
+)
+
+const CameraIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </svg>
+)
+
 export default function Home() {
   const { user, totalKcal, totalProt, totalCarb, totalFat, meals, addMeal } = useApp()
   const navigate = useNavigate()
   const remaining = Math.max(user.kcalGoal - totalKcal, 0)
+  const progress = Math.min((totalKcal / user.kcalGoal) * 100, 100)
 
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
@@ -37,7 +66,7 @@ export default function Home() {
               role: 'user',
               content: [
                 { type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } },
-                { type: 'text', text: 'Analise este alimento e responda APENAS com JSON sem texto extra: {"name":"nome em portugues","emoji":"emoji","kcal":0,"prot":0,"carb":0,"fat":0,"confidence":0}' }
+                { type: 'text', text: 'Analise este alimento e responda APENAS com JSON sem texto extra: {"name":"nome em portugues","kcal":0,"prot":0,"carb":0,"fat":0,"confidence":0}' }
               ]
             }]
           })
@@ -47,7 +76,7 @@ export default function Home() {
         const food = JSON.parse(text.replace(/```json|```/g, '').trim())
         setResult(food)
       } catch {
-        setResult({ name: 'Frango grelhado', emoji: '🍗', kcal: 165, prot: 31, carb: 0, fat: 4, confidence: 90 })
+        setResult({ name: 'Frango grelhado', kcal: 165, prot: 31, carb: 0, fat: 4, confidence: 90 })
       } finally {
         setLoading(false)
       }
@@ -65,7 +94,6 @@ export default function Home() {
   function handleConfirm() {
     addMeal({
       name: result.name,
-      emoji: result.emoji,
       kcal: Math.round(result.kcal * portion),
       prot: Math.round(result.prot * portion),
       carb: Math.round(result.carb * portion),
@@ -80,60 +108,74 @@ export default function Home() {
       {/* Header */}
       <div className="px-5 pt-8 pb-4 flex items-center justify-between">
         <div>
-          <p className="text-gray-500 text-sm">Bem-vindo de volta,</p>
-          <h1 className="text-white text-3xl font-black">{user.name}.</h1>
-          <p className="text-gray-500 text-xs mt-1">
+          <p className="text-gray-500 text-xs uppercase tracking-widest">Bem-vindo de volta</p>
+          <h1 style={{ ...displayFont, fontSize: '2.2rem', fontWeight: 900, color: 'white', lineHeight: 1.1 }}>
+            Hi, {user.name.split(' ')[0]}.
+          </h1>
+          <p className="text-gray-600 text-xs mt-1">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-        <div
-          onClick={() => navigate('/profile')}
+        <div onClick={() => navigate('/profile')}
           className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-xl cursor-pointer"
-          style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)' }}
-        >
+          style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', fontFamily: 'Barlow Condensed, sans-serif' }}>
           {user.name[0].toUpperCase()}
         </div>
       </div>
 
       {/* Stats cards */}
-      <div className="px-5 grid grid-cols-3 gap-3 mb-6">
+      <div className="px-5 grid grid-cols-3 gap-3 mb-5">
         {[
-          { label: 'Calorias', value: totalKcal, unit: 'kcal', icon: '🔥' },
-          { label: 'Proteína', value: `${totalProt}g`, unit: '', icon: '💪' },
-          { label: 'Restante', value: remaining, unit: 'kcal', icon: '⚡' },
+          { label: 'Calorias', value: totalKcal, icon: <FireIcon /> },
+          { label: 'Proteína', value: `${totalProt}g`, icon: <MuscleIcon /> },
+          { label: 'Restante', value: remaining, icon: <ZapIcon /> },
         ].map((stat, i) => (
-          <div
-            key={i}
-            className="rounded-2xl p-3"
-            style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}
-          >
-            <p className="text-2xl mb-1">{stat.icon}</p>
-            <p className="text-white font-black text-lg leading-none">{stat.value}</p>
-            <p className="text-purple-200 text-xs mt-1">{stat.label}</p>
+          <div key={i} className="rounded-2xl p-3"
+            style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
+            <div className="mb-2">{stat.icon}</div>
+            <p style={{ ...displayFont, fontSize: '1.4rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>
+              {stat.value}
+            </p>
+            <p className="text-purple-200 text-xs mt-1 uppercase tracking-wider">{stat.label}</p>
           </div>
         ))}
       </div>
 
+      {/* Progresso */}
+      <div className="px-5 mb-5">
+        <div className="flex justify-between mb-2">
+          <p style={{ ...displayFont, fontSize: '0.75rem', color: '#6B7280', letterSpacing: '0.1em' }}>Progresso diário</p>
+          <p style={{ ...displayFont, fontSize: '0.75rem', color: '#A78BFA', letterSpacing: '0.1em' }}>{Math.round(progress)}%</p>
+        </div>
+        <div className="rounded-full h-2" style={{ background: '#1A1A1A' }}>
+          <div className="h-2 rounded-full transition-all"
+            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7C3AED, #A78BFA)' }} />
+        </div>
+      </div>
+
       {/* Gráfico semanal */}
-      <div className="mx-5 rounded-2xl p-4 mb-6" style={{ background: '#1A1A1A' }}>
+      <div className="mx-5 rounded-2xl p-4 mb-5" style={{ background: '#1A1A1A' }}>
         <div className="flex items-center justify-between mb-4">
-          <p className="text-white font-black text-sm uppercase tracking-wider">Calorias</p>
-          <p className="text-purple-400 text-xs">Média semanal</p>
+          <p style={{ ...displayFont, fontSize: '1rem', fontWeight: 800, color: 'white' }}>Calories</p>
+          <p style={{ ...displayFont, fontSize: '0.75rem', color: '#A78BFA', letterSpacing: '0.05em' }}>Weekly Average</p>
         </div>
         <div className="flex items-end justify-between gap-1" style={{ height: '80px' }}>
           {weekData.map((d, i) => (
             <div key={i} className="flex flex-col items-center gap-1 flex-1">
-              <div
-                className="w-full rounded-t-lg transition-all"
+              <div className="w-full rounded-t-lg transition-all"
                 style={{
                   height: `${(d.kcal / maxKcal) * 70}px`,
-                  background: d.isToday
-                    ? 'linear-gradient(180deg, #A78BFA, #7C3AED)'
-                    : 'rgba(124, 58, 237, 0.25)',
+                  background: d.isToday ? 'linear-gradient(180deg, #A78BFA, #7C3AED)' : 'rgba(124,58,237,0.25)',
                   minHeight: '4px'
-                }}
-              />
-              <p className={`text-xs ${d.isToday ? 'text-purple-400 font-bold' : 'text-gray-600'}`}>
+                }} />
+              <p style={{
+                fontFamily: 'Barlow Condensed, sans-serif',
+                fontSize: '0.65rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                color: d.isToday ? '#A78BFA' : '#4B5563',
+                fontWeight: d.isToday ? 700 : 400
+              }}>
                 {d.day}
               </p>
             </div>
@@ -144,8 +186,9 @@ export default function Home() {
       {/* Últimas refeições */}
       <div className="px-5 mb-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-white font-black text-sm uppercase tracking-wider">Refeições</p>
-          <span className="text-purple-400 text-xs cursor-pointer" onClick={() => navigate('/diary')}>
+          <p style={{ ...displayFont, fontSize: '1rem', fontWeight: 800, color: 'white' }}>Refeições</p>
+          <span style={{ ...displayFont, fontSize: '0.75rem', color: '#A78BFA', cursor: 'pointer', letterSpacing: '0.05em' }}
+            onClick={() => navigate('/diary')}>
             Ver tudo →
           </span>
         </div>
@@ -158,17 +201,13 @@ export default function Home() {
           <div className="rounded-2xl overflow-hidden" style={{ background: '#1A1A1A' }}>
             {meals.slice(-3).reverse().map(meal => (
               <div key={meal.id} className="flex items-center justify-between p-4 border-b border-gray-800 last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                    style={{ background: 'rgba(124, 58, 237, 0.2)' }}>
-                    {meal.emoji}
-                  </div>
-                  <div>
-                    <p className="text-white text-sm font-bold">{meal.name}</p>
-                    <p className="text-gray-500 text-xs">{meal.time}</p>
-                  </div>
+                <div>
+                  <p className="text-white text-sm font-bold">{meal.name}</p>
+                  <p className="text-gray-500 text-xs">{meal.time}</p>
                 </div>
-                <p className="text-purple-400 font-black text-sm">{meal.kcal} kcal</p>
+                <p style={{ ...displayFont, fontSize: '1rem', fontWeight: 700, color: '#A78BFA' }}>
+                  {meal.kcal} kcal
+                </p>
               </div>
             ))}
           </div>
@@ -178,11 +217,14 @@ export default function Home() {
       {/* Loading */}
       {loading && (
         <div className="mx-5 rounded-2xl p-6 text-center mb-4" style={{ background: '#1A1A1A' }}>
-          <p className="text-gray-400 mb-3 text-sm">Analisando com IA...</p>
+          <p style={{ ...displayFont, fontSize: '0.9rem', color: '#6B7280', letterSpacing: '0.1em', marginBottom: '12px' }}>
+            Analisando com IA...
+          </p>
           <div className="flex justify-center gap-2">
-            <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#7C3AED' }}></div>
-            <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#7C3AED', animationDelay: '0.1s' }}></div>
-            <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#7C3AED', animationDelay: '0.2s' }}></div>
+            {[0, 0.1, 0.2].map((delay, i) => (
+              <div key={i} className="w-2 h-2 rounded-full animate-bounce"
+                style={{ background: '#7C3AED', animationDelay: `${delay}s` }} />
+            ))}
           </div>
         </div>
       )}
@@ -190,20 +232,21 @@ export default function Home() {
       {/* Resultado IA */}
       {result && !loading && (
         <div className="mx-5 rounded-2xl p-5 mb-4" style={{ background: '#1A1A1A', border: '1px solid #7C3AED' }}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-              style={{ background: 'rgba(124, 58, 237, 0.2)' }}>
-              {result.emoji}
-            </div>
-            <div>
-              <p className="text-white font-black text-lg">{result.name}</p>
-              <p className="text-purple-400 text-xs">Confiança: {result.confidence}%</p>
-            </div>
+          <div className="mb-4">
+            <p style={{ ...displayFont, fontSize: '1.4rem', fontWeight: 900, color: 'white' }}>{result.name}</p>
+            <p style={{ ...displayFont, fontSize: '0.75rem', color: '#A78BFA', letterSpacing: '0.1em' }}>
+              Confiança: {result.confidence}%
+            </p>
           </div>
 
-          <div className="rounded-xl p-4 text-center mb-4" style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
-            <p className="text-white text-4xl font-black">{Math.round(result.kcal * portion)}</p>
-            <p className="text-purple-200 text-sm">calorias</p>
+          <div className="rounded-xl p-4 text-center mb-4"
+            style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
+            <p style={{ ...displayFont, fontSize: '3rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>
+              {Math.round(result.kcal * portion)}
+            </p>
+            <p style={{ ...displayFont, fontSize: '0.75rem', color: '#DDD6FE', letterSpacing: '0.1em', marginTop: '4px' }}>
+              Calorias
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-2 mb-4">
@@ -212,19 +255,22 @@ export default function Home() {
               { label: 'Carbs', value: Math.round(result.carb * portion) },
               { label: 'Gordura', value: Math.round(result.fat * portion) },
             ].map(m => (
-              <div key={m.label} className="rounded-xl p-3 text-center" style={{ background: 'rgba(124, 58, 237, 0.15)' }}>
-                <p className="text-white font-black">{m.value}g</p>
-                <p className="text-gray-500 text-xs mt-1">{m.label}</p>
+              <div key={m.label} className="rounded-xl p-3 text-center"
+                style={{ background: 'rgba(124,58,237,0.15)' }}>
+                <p style={{ ...displayFont, fontSize: '1.1rem', fontWeight: 800, color: 'white' }}>{m.value}g</p>
+                <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', letterSpacing: '0.05em', marginTop: '4px' }}>
+                  {m.label}
+                </p>
               </div>
             ))}
           </div>
 
           <div className="flex items-center justify-between rounded-xl p-3 mb-4" style={{ background: '#111' }}>
-            <p className="text-gray-400 text-sm">Porção</p>
+            <p style={{ ...displayFont, fontSize: '0.85rem', color: '#6B7280' }}>Porção</p>
             <div className="flex items-center gap-4">
               <button onClick={() => setPortion(p => Math.max(0.5, p - 0.5))}
                 className="w-8 h-8 rounded-lg text-white font-bold" style={{ background: '#2A2A2A' }}>−</button>
-              <span className="text-white font-black">{portion}x</span>
+              <span style={{ ...displayFont, fontSize: '1.1rem', fontWeight: 800, color: 'white' }}>{portion}x</span>
               <button onClick={() => setPortion(p => Math.min(5, p + 0.5))}
                 className="w-8 h-8 rounded-lg text-white font-bold" style={{ background: '#2A2A2A' }}>+</button>
             </div>
@@ -232,13 +278,14 @@ export default function Home() {
 
           <div className="flex gap-3">
             <button onClick={() => setResult(null)}
-              className="flex-1 py-3 rounded-xl text-white font-bold" style={{ background: '#2A2A2A' }}>
+              className="flex-1 py-3 rounded-full text-white font-bold uppercase"
+              style={{ background: '#2A2A2A', fontFamily: 'Barlow Condensed, sans-serif', letterSpacing: '0.05em' }}>
               Cancelar
             </button>
             <button onClick={handleConfirm}
-              className="flex-1 py-3 rounded-xl text-white font-black"
-              style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
-              ✓ Adicionar
+              className="flex-1 py-3 rounded-full text-white font-black uppercase"
+              style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', fontFamily: 'Barlow Condensed, sans-serif', letterSpacing: '0.05em' }}>
+              Adicionar
             </button>
           </div>
         </div>
@@ -246,10 +293,10 @@ export default function Home() {
 
       {/* Botão adicionar */}
       <div className="px-5">
-        <label className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl cursor-pointer font-black text-white transition-all active:scale-95"
-          style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}>
-          <span className="text-xl">📸</span>
-          <span>Adicionar refeição</span>
+        <label className="flex items-center justify-center gap-3 w-full py-4 rounded-full cursor-pointer text-white transition-all active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
+          <CameraIcon />
+          Add Meal
           <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
         </label>
       </div>

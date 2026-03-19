@@ -1,12 +1,27 @@
 import { useApp } from '../context/AppContext'
 import { useNavigate } from 'react-router-dom'
 
+const displayFont = { fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase' }
+
 const MEAL_TYPES = [
   { label: 'Café da manhã', icon: '☕' },
   { label: 'Almoço', icon: '🍽️' },
   { label: 'Jantar', icon: '🌙' },
   { label: 'Lanche', icon: '🥪' },
 ]
+
+const PlusIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+)
+
+const CameraIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <circle cx="12" cy="13" r="4"/>
+  </svg>
+)
 
 export default function Diary() {
   const { meals, totalKcal, user } = useApp()
@@ -17,31 +32,33 @@ export default function Diary() {
     <div className="pb-24">
 
       <div className="px-5 pt-8 pb-4">
-        <h1 className="text-white text-3xl font-black">Diário.</h1>
-        <p className="text-gray-500 text-sm mt-1">Registro alimentar de hoje</p>
+        <p className="text-gray-500 text-xs uppercase tracking-widest">Registro alimentar</p>
+        <h1 style={{ ...displayFont, fontSize: '2.2rem', fontWeight: 900, color: 'white', lineHeight: 1.1 }}>
+          Diário.
+        </h1>
       </div>
 
-      <div className="mx-5 rounded-2xl p-4 mb-6" style={{ background: '#1A1A1A' }}>
+      {/* Resumo calórico */}
+      <div className="mx-5 rounded-2xl p-4 mb-5" style={{ background: '#1A1A1A' }}>
         <div className="flex justify-between mb-3">
-          <div className="text-center">
-            <p className="text-white font-black text-xl">{totalKcal}</p>
-            <p className="text-gray-500 text-xs">consumido</p>
-          </div>
-          <div className="text-center">
-            <p className="text-white font-black text-xl">{user.kcalGoal}</p>
-            <p className="text-gray-500 text-xs">meta</p>
-          </div>
-          <div className="text-center">
-            <p className="text-purple-400 font-black text-xl">{Math.max(user.kcalGoal - totalKcal, 0)}</p>
-            <p className="text-gray-500 text-xs">restante</p>
-          </div>
+          {[
+            { label: 'Consumido', value: totalKcal, color: 'white' },
+            { label: 'Meta', value: user.kcalGoal, color: 'white' },
+            { label: 'Restante', value: Math.max(user.kcalGoal - totalKcal, 0), color: '#A78BFA' },
+          ].map(item => (
+            <div key={item.label} className="text-center">
+              <p style={{ ...displayFont, fontSize: '1.4rem', fontWeight: 900, color: item.color }}>{item.value}</p>
+              <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', letterSpacing: '0.08em', marginTop: '2px' }}>{item.label}</p>
+            </div>
+          ))}
         </div>
-        <div className="rounded-full h-2" style={{ background: '#2A2A2A' }}>
-          <div className="h-2 rounded-full transition-all"
-            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7C3AED, #A78BFA)' }}></div>
+        <div className="rounded-full h-1.5" style={{ background: '#2A2A2A' }}>
+          <div className="h-1.5 rounded-full transition-all"
+            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #7C3AED, #A78BFA)' }} />
         </div>
       </div>
 
+      {/* Refeições por tipo */}
       <div className="px-5">
         {MEAL_TYPES.map(type => {
           const typeMeals = meals.filter(m => m.type === type.label)
@@ -50,35 +67,32 @@ export default function Diary() {
           return (
             <div key={type.label} className="mb-5">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{type.icon}</span>
-                  <div>
-                    <p className="text-white font-bold text-sm">{type.label}</p>
-                    <p className="text-gray-500 text-xs">{typeKcal > 0 ? `${typeKcal} kcal` : 'Vazio'}</p>
-                  </div>
+                <div>
+                  <p style={{ ...displayFont, fontSize: '1rem', fontWeight: 800, color: 'white' }}>{type.label}</p>
+                  <p style={{ ...displayFont, fontSize: '0.7rem', color: typeKcal > 0 ? '#A78BFA' : '#4B5563', letterSpacing: '0.05em' }}>
+                    {typeKcal > 0 ? `${typeKcal} kcal` : 'Vazio'}
+                  </p>
                 </div>
-                <button
-                  onClick={() => navigate('/home')}
-                  className="w-8 h-8 rounded-lg font-bold text-white text-lg"
-                  style={{ background: 'rgba(124, 58, 237, 0.3)' }}
-                >+</button>
+                <button onClick={() => navigate('/home')}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(124,58,237,0.3)' }}>
+                  <PlusIcon />
+                </button>
               </div>
 
               {typeMeals.length > 0 && (
                 <div className="rounded-2xl overflow-hidden" style={{ background: '#1A1A1A' }}>
                   {typeMeals.map(meal => (
                     <div key={meal.id} className="flex items-center justify-between p-4 border-b border-gray-800 last:border-0">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                          style={{ background: 'rgba(124, 58, 237, 0.2)' }}>
-                          {meal.emoji}
-                        </div>
-                        <div>
-                          <p className="text-white text-sm font-bold">{meal.name}</p>
-                          <p className="text-gray-500 text-xs">P:{meal.prot}g C:{meal.carb}g G:{meal.fat}g</p>
-                        </div>
+                      <div>
+                        <p className="text-white text-sm font-bold">{meal.name}</p>
+                        <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', letterSpacing: '0.05em', marginTop: '2px' }}>
+                          P:{meal.prot}g &nbsp; C:{meal.carb}g &nbsp; G:{meal.fat}g
+                        </p>
                       </div>
-                      <p className="text-purple-400 font-black text-sm">{meal.kcal} kcal</p>
+                      <p style={{ ...displayFont, fontSize: '1rem', fontWeight: 700, color: '#A78BFA' }}>
+                        {meal.kcal} kcal
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -88,16 +102,16 @@ export default function Diary() {
         })}
       </div>
 
+      {/* Botão adicionar */}
       <div className="px-5 mt-2">
-        <button
-          onClick={() => navigate('/home')}
-          className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-black text-white"
-          style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}
-        >
-          <span className="text-xl">📸</span>
-          Adicionar refeição
+        <button onClick={() => navigate('/home')}
+          className="flex items-center justify-center gap-3 w-full py-4 rounded-full text-white transition-all active:scale-95"
+          style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
+          <CameraIcon />
+          Add Meal
         </button>
       </div>
+
     </div>
   )
 }

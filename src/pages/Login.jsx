@@ -9,52 +9,70 @@ export default function Login() {
     navigate('/home')
   }
 
+  const inputStyle = {
+    background: 'transparent',
+    borderBottom: '1px solid #3A3A3A',
+    borderTop: 'none',
+    borderLeft: 'none',
+    borderRight: 'none',
+    borderRadius: 0,
+    color: 'white',
+    padding: '12px 0',
+    width: '100%',
+    outline: 'none',
+    fontSize: '1rem',
+  }
+
   return (
-    <div className="min-h-screen flex flex-col px-8 pt-16" style={{ background: '#0F0F0F' }}>
-      <button onClick={() => navigate('/')} className="text-gray-500 text-sm mb-8">← Voltar</button>
+    <div className="min-h-screen flex flex-col px-6 pt-12 pb-8" style={{ background: '#0F0F0F' }}>
 
-      <h1 className="text-white text-4xl font-black mb-2">Entrar.</h1>
-      <p className="text-gray-500 text-sm mb-10">Bem-vindo de volta!</p>
+      <button onClick={() => navigate('/')} className="text-gray-500 text-xl mb-12">←</button>
 
-      <div className="flex flex-col gap-4 mb-8">
+      <h1 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '2.5rem', fontWeight: 900, textTransform: 'uppercase', color: 'white', marginBottom: '2rem' }}>
+        Login to Your<br />Account
+      </h1>
+
+      <div className="flex flex-col gap-6 flex-1">
         <div>
-          <p className="text-gray-500 text-xs mb-2">Email</p>
+          <p className="text-gray-500 text-xs mb-2 uppercase tracking-widest">Email</p>
           <input
             type="email"
             placeholder="seu@email.com"
-            className="w-full rounded-2xl px-4 py-4 outline-none text-white"
-            style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}
+            style={inputStyle}
             value={form.email}
             onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
           />
         </div>
         <div>
-          <p className="text-gray-500 text-xs mb-2">Senha</p>
+          <p className="text-gray-500 text-xs mb-2 uppercase tracking-widest">Senha</p>
           <input
             type="password"
             placeholder="••••••••"
-            className="w-full rounded-2xl px-4 py-4 outline-none text-white"
-            style={{ background: '#1A1A1A', border: '1px solid #2A2A2A' }}
+            style={inputStyle}
             value={form.password}
             onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
           />
         </div>
       </div>
 
-      <button
-        onClick={handleLogin}
-        className="w-full py-4 rounded-2xl text-white font-black text-lg mb-4"
-        style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)' }}
-      >
-        Entrar
-      </button>
+      <div className="mt-auto">
+        <button
+          onClick={handleLogin}
+          className="w-full py-4 rounded-full text-white font-bold mb-4"
+          style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}
+        >
+          Sign In
+        </button>
 
-      <p className="text-center text-gray-500 text-sm">
-        Não tem conta?{' '}
-        <span className="text-purple-400 font-bold cursor-pointer" onClick={() => navigate('/register')}>
-          Criar conta
-        </span>
-      </p>
+        <p className="text-center text-gray-500 text-sm">
+          Não tem conta?{' '}
+          <span className="font-bold cursor-pointer" style={{ color: '#A78BFA' }}
+            onClick={() => navigate('/register')}>
+            Sign up
+          </span>
+        </p>
+      </div>
+
     </div>
   )
 }
