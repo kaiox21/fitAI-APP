@@ -42,7 +42,6 @@ export default function Login() {
         return
       }
 
-      // Busca o perfil do usuário no banco
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -57,7 +56,7 @@ export default function Login() {
       setUser({
         id: profile.id,
         name: profile.name,
-        email: profile.email || form.email,
+        email: form.email,
         age: profile.age,
         weight: profile.weight,
         height: profile.height,
@@ -68,7 +67,7 @@ export default function Login() {
       })
 
       navigate('/home')
-    } catch {
+    } catch (_error) {
       setError('Erro ao fazer login. Tente novamente.')
     } finally {
       setLoading(false)
