@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 const AppContext = createContext()
 
@@ -11,8 +12,6 @@ function calcTMB(user) {
 }
 
 function calcTDEEBase(user) {
-  // TDEE base = só metabolismo basal × fator sedentário (1.2)
-  // O treino é contabilizado separadamente via burnedFromWorkout
   return Math.round(calcTMB(user) * 1.2)
 }
 
@@ -22,56 +21,123 @@ export function AppProvider({ children }) {
     return saved ? JSON.parse(saved) : null
   })
 
-  const [meals, setMeals] = useState(() => {
-    const saved = localStorage.getItem('fitai_meals')
-    return saved ? JSON.parse(saved) : []
-  })
+  const [meals, setMeals] = useState([])
+  const [measures, setMeasures] = useState([])
+  const [workoutLogs, setWorkoutLogs] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const [measures, setMeasures] = useState(() => {
-    const saved = localStorage.getItem('fitai_measures')
-    return saved ? JSON.parse(saved) : []
-  })
+  // Persiste usuário no localStorage
+  useEffect(() => {
+    localStorage.setItem('fitai_user', JSON.stringify(user))
+  }, [user])
 
-  const [workoutLogs, setWorkoutLogs] = useState(() => {
-    const saved = localStorage.getItem('fitai_workoutlogs')
-    return saved ? JSON.parse(saved) : []
-  })
+  // Carrega dados do Supabase quando usuário loga
+  useEffect(() => {
+    if (!user?.id) return
+    loadData()
+  }, [user?.id])
 
-  useEffect(() => { localStorage.setItem('fitai_user', JSON.stringify(user)) }, [user])
-  useEffect(() => { localStorage.setItem('fitai_meals', JSON.stringify(meals)) }, [meals])
-  useEffect(() => { localStorage.setItem('fitai_measures', JSON.stringify(measures)) }, [measures])
-  useEffect(() => { localStorage.setItem('fitai_workoutlogs', JSON.stringify(workoutLogs)) }, [workoutLogs])
+  async function loadData() {
+    setLoading(true)
+    try {
+      const [mealsRes, measuresRes, logsRes] = await Promise.all([
+        supabase.from('meals').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('measures').select('*').eq('user_id', user.id).order('date', { ascending: true }),
+        supabase.from('workout_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+      ])
 
-  function addMeal(meal) {
+      if (mealsRes.data) setMeals(mealsRes.data.map(m => ({
+        id: m.id, name: m.name, kcal: m.kcal, prot: m.prot,
+        carb: m.carb, fat: m.fat, type: m.type, date: m.date, time: m.time
+      })))
+
+      if (measuresRes.data) setMeasures(measuresRes.data.map(m => ({
+        id: m.id, weight: m.weight, waist: m.waist, arm: m.arm,
+        chest: m.chest, leg: m.leg, date: m.date
+      })))
+
+      if (logsRes.data) setWorkoutLogs(logsRes.data.map(l => ({
+        id: l.id, workout: l.workout, tag: l.tag, exercises: l.exercises,
+        cardio: l.cardio, cardioMinutes: l.cardio_minutes,
+        caloriesBurned: l.calories_burned, duration: l.duration, date: l.date
+      })))
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function addMeal(meal) {
     const hour = new Date().getHours()
     let type = 'Lanche'
     if (hour >= 6 && hour < 10) type = 'Café da manhã'
     else if (hour >= 11 && hour < 15) type = 'Almoço'
     else if (hour >= 18 && hour < 22) type = 'Jantar'
-    setMeals(prev => [...prev, {
-      ...meal, id: Date.now(), type,
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-    }])
+
+    const date = new Date().toISOString().split('T')[0]
+    const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+    const { data, error } = await supabase.from('meals').insert({
+      user_id: user.id,
+      name: meal.name, kcal: meal.kcal, prot: meal.prot,
+      carb: meal.carb, fat: meal.fat, type, date, time
+    }).select().single()
+
+    if (!error && data) {
+      setMeals(prev => [...prev, {
+        id: data.id, name: data.name, kcal: data.kcal, prot: data.prot,
+        carb: data.carb, fat: data.fat, type: data.type, date: data.date, time: data.time
+      }])
+    }
   }
 
-  function removeMeal(id) {
+  async function removeMeal(id) {
+    await supabase.from('meals').delete().eq('id', id)
     setMeals(prev => prev.filter(m => m.id !== id))
   }
 
-  function addMeasure(entry) {
-    setMeasures(prev => [...prev, { ...entry, date: new Date().toISOString().split('T')[0] }])
+  async function addMeasure(entry) {
+    const date = new Date().toISOString().split('T')[0]
+    const { data, error } = await supabase.from('measures').insert({
+      user_id: user.id,
+      weight: entry.weight, waist: entry.waist, arm: entry.arm,
+      chest: entry.chest, leg: entry.leg, date
+    }).select().single()
+
+    if (!error && data) {
+      setMeasures(prev => [...prev, {
+        id: data.id, weight: data.weight, waist: data.waist, arm: data.arm,
+        chest: data.chest, leg: data.leg, date: data.date
+      }])
+    }
   }
 
-  function addWorkoutLog(log) {
-    setWorkoutLogs(prev => [...prev, { ...log, date: new Date().toISOString().split('T')[0], id: Date.now() }])
+  async function addWorkoutLog(log) {
+    const date = new Date().toISOString().split('T')[0]
+    const { data, error } = await supabase.from('workout_logs').insert({
+      user_id: user.id,
+      workout: log.workout, tag: log.tag, exercises: log.exercises,
+      cardio: log.cardio, cardio_minutes: log.cardioMinutes,
+      calories_burned: log.caloriesBurned, duration: log.duration, date
+    }).select().single()
+
+    if (!error && data) {
+      setWorkoutLogs(prev => [...prev, {
+        id: data.id, workout: data.workout, tag: data.tag, exercises: data.exercises,
+        cardio: data.cardio, cardioMinutes: data.cardio_minutes,
+        caloriesBurned: data.calories_burned, duration: data.duration, date: data.date
+      }])
+    }
   }
 
-  function removeWorkoutLog(id) {
+  async function removeWorkoutLog(id) {
+    await supabase.from('workout_logs').delete().eq('id', id)
     setWorkoutLogs(prev => prev.filter(w => w.id !== id))
   }
 
-  function logout() {
+  async function logout() {
+    await supabase.auth.signOut()
     setUser(null)
     setMeals([])
     setMeasures([])
@@ -88,19 +154,11 @@ export function AppProvider({ children }) {
   const totalCarb = todayMeals.reduce((sum, m) => sum + m.carb, 0)
   const totalFat = todayMeals.reduce((sum, m) => sum + m.fat, 0)
 
-  // Calorias queimadas só no treino hoje
   const burnedFromWorkout = todayLogs.reduce((sum, w) => sum + w.caloriesBurned, 0)
-
-  // TDEE base = metabolismo × 1.2 (sem contar treino)
   const tdeeBase = user ? calcTDEEBase(user) : 0
-
-  // Gasto total = TDEE base + treino
   const totalBurned = tdeeBase + burnedFromWorkout
-
-  // Déficit = gasto total - consumido
   const dailyDeficit = totalBurned - totalKcal
 
-  // Dados semanais — só conta dias com refeição ou treino registrado
   const weeklyData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
@@ -109,11 +167,8 @@ export function AppProvider({ children }) {
     const dayLogs = workoutLogs.filter(w => w.date === key)
     const consumed = dayMeals.reduce((s, m) => s + m.kcal, 0)
     const workoutBurned = dayLogs.reduce((s, w) => s + w.caloriesBurned, 0)
-
-    // Só inclui TDEE base se o dia tiver algum registro
     const hasData = dayMeals.length > 0 || dayLogs.length > 0
     const burned = hasData ? (user ? calcTDEEBase(user) : 0) + workoutBurned : 0
-
     return { date: key, consumed, burned, deficit: hasData ? burned - consumed : 0 }
   })
 
@@ -125,7 +180,7 @@ export function AppProvider({ children }) {
       workoutLogs, addWorkoutLog, removeWorkoutLog,
       totalKcal, totalProt, totalCarb, totalFat,
       burnedFromWorkout, totalBurned, tdeeBase, dailyDeficit,
-      weeklyData, logout,
+      weeklyData, loading, logout,
     }}>
       {children}
     </AppContext.Provider>

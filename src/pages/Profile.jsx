@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { supabase } from '../lib/supabase'
 
 const displayFont = { fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase' }
 
 export default function Profile() {
   const { user, setUser, logout } = useApp()
   const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ ...user })
 
   function calcTMB() {
@@ -20,13 +22,33 @@ export default function Profile() {
     return Math.round(calcTMB() * 1.55)
   }
 
-  function handleSave() {
+  async function handleSave() {
+    setSaving(true)
     const tdee = calcTDEE()
     let kcalGoal = tdee
     if (form.goal === 'loss') kcalGoal = tdee - 500
     if (form.goal === 'gain') kcalGoal = tdee + 300
-    setUser({ ...form, kcalGoal })
-    setEditing(false)
+
+    const updatedUser = { ...form, kcalGoal }
+
+    // Atualiza no Supabase
+    const { error } = await supabase.from('profiles').update({
+      name: form.name,
+      age: parseInt(form.age),
+      sex: form.sex,
+      weight: parseFloat(form.weight),
+      height: parseFloat(form.height),
+      goal: form.goal,
+      activity: parseFloat(form.activity),
+      kcal_goal: kcalGoal,
+    }).eq('id', user.id)
+
+    if (!error) {
+      setUser(updatedUser)
+      setEditing(false)
+    }
+
+    setSaving(false)
   }
 
   const goalLabels = { loss: 'Emagrecer', gain: 'Ganhar massa', maint: 'Manter peso' }
@@ -57,10 +79,11 @@ export default function Profile() {
         </div>
         <button
           onClick={() => editing ? handleSave() : setEditing(true)}
+          disabled={saving}
           className="px-4 py-2 rounded-full text-white font-bold"
           style={{ background: editing ? 'linear-gradient(135deg, #7C3AED, #5B21B6)' : '#1A1A1A', border: editing ? 'none' : '1px solid #2A2A2A', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '0.9rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}
         >
-          {editing ? 'Salvar' : 'Editar'}
+          {saving ? 'Salvando...' : editing ? 'Salvar' : 'Editar'}
         </button>
       </div>
 
