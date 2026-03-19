@@ -18,17 +18,15 @@ export function AppProvider({ children }) {
     return saved ? JSON.parse(saved) : []
   })
 
-  useEffect(() => {
-    localStorage.setItem('fitai_user', JSON.stringify(user))
-  }, [user])
+  const [workoutLogs, setWorkoutLogs] = useState(() => {
+    const saved = localStorage.getItem('fitai_workoutlogs')
+    return saved ? JSON.parse(saved) : []
+  })
 
-  useEffect(() => {
-    localStorage.setItem('fitai_meals', JSON.stringify(meals))
-  }, [meals])
-
-  useEffect(() => {
-    localStorage.setItem('fitai_measures', JSON.stringify(measures))
-  }, [measures])
+  useEffect(() => { localStorage.setItem('fitai_user', JSON.stringify(user)) }, [user])
+  useEffect(() => { localStorage.setItem('fitai_meals', JSON.stringify(meals)) }, [meals])
+  useEffect(() => { localStorage.setItem('fitai_measures', JSON.stringify(measures)) }, [measures])
+  useEffect(() => { localStorage.setItem('fitai_workoutlogs', JSON.stringify(workoutLogs)) }, [workoutLogs])
 
   function addMeal(meal) {
     const hour = new Date().getHours()
@@ -36,45 +34,61 @@ export function AppProvider({ children }) {
     if (hour >= 6 && hour < 10) type = 'Café da manhã'
     else if (hour >= 11 && hour < 15) type = 'Almoço'
     else if (hour >= 18 && hour < 22) type = 'Jantar'
-
     setMeals(prev => [...prev, {
-      ...meal,
-      id: Date.now(),
-      type,
+      ...meal, id: Date.now(), type,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     }])
   }
 
   function addMeasure(entry) {
-    setMeasures(prev => [...prev, {
-      ...entry,
-      date: new Date().toISOString().split('T')[0]
-    }])
+    setMeasures(prev => [...prev, { ...entry, date: new Date().toISOString().split('T')[0] }])
+  }
+
+  function addWorkoutLog(log) {
+    setWorkoutLogs(prev => [...prev, { ...log, date: new Date().toISOString().split('T')[0], id: Date.now() }])
   }
 
   function logout() {
     setUser(null)
     setMeals([])
     setMeasures([])
+    setWorkoutLogs([])
     localStorage.clear()
   }
 
   const today = new Date().toISOString().split('T')[0]
   const todayMeals = meals.filter(m => m.date === today)
+  const todayLogs = workoutLogs.filter(w => w.date === today)
 
   const totalKcal = todayMeals.reduce((sum, m) => sum + m.kcal, 0)
   const totalProt = todayMeals.reduce((sum, m) => sum + m.prot, 0)
   const totalCarb = todayMeals.reduce((sum, m) => sum + m.carb, 0)
   const totalFat = todayMeals.reduce((sum, m) => sum + m.fat, 0)
+  const totalBurned = todayLogs.reduce((sum, w) => sum + w.caloriesBurned, 0)
+  const dailyDeficit = totalBurned - totalKcal
+
+  // Últimos 7 dias
+  const weeklyData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    const key = d.toISOString().split('T')[0]
+    const dayMeals = meals.filter(m => m.date === key)
+    const dayLogs = workoutLogs.filter(w => w.date === key)
+    const consumed = dayMeals.reduce((s, m) => s + m.kcal, 0)
+    const burned = dayLogs.reduce((s, w) => s + w.caloriesBurned, 0)
+    return { date: key, consumed, burned, deficit: burned - consumed }
+  })
 
   return (
     <AppContext.Provider value={{
       user, setUser,
       meals, addMeal,
       measures, addMeasure,
+      workoutLogs, addWorkoutLog,
       totalKcal, totalProt, totalCarb, totalFat,
-      logout,
+      totalBurned, dailyDeficit,
+      weeklyData, logout,
     }}>
       {children}
     </AppContext.Provider>

@@ -31,7 +31,7 @@ const CameraIcon = () => (
 )
 
 export default function Home() {
-  const { user, totalKcal, totalProt, totalCarb, totalFat, meals, addMeal } = useApp()
+  const { user, totalKcal, totalProt, totalCarb, totalFat, meals, addMeal, totalBurned, dailyDeficit, weeklyData } = useApp()
   const navigate = useNavigate()
   const remaining = Math.max(user.kcalGoal - totalKcal, 0)
   const progress = Math.min((totalKcal / user.kcalGoal) * 100, 100)
@@ -48,6 +48,10 @@ export default function Home() {
     isToday: i === today,
   }))
   const maxKcal = Math.max(...weekData.map(d => d.kcal), 1)
+
+  const weeklyDeficit = weeklyData.reduce((sum, d) => sum + d.deficit, 0)
+  const weeklyConsumed = weeklyData.reduce((sum, d) => sum + d.consumed, 0)
+  const weeklyBurned = weeklyData.reduce((sum, d) => sum + d.burned, 0)
 
   async function analyzeImage(file) {
     setLoading(true)
@@ -126,8 +130,8 @@ export default function Home() {
       {/* Stats cards */}
       <div className="px-5 grid grid-cols-3 gap-3 mb-5">
         {[
-          { label: 'Calorias', value: totalKcal, icon: <FireIcon /> },
-          { label: 'Proteína', value: `${totalProt}g`, icon: <MuscleIcon /> },
+          { label: 'Consumido', value: totalKcal, icon: <FireIcon /> },
+          { label: 'Queimado', value: totalBurned, icon: <MuscleIcon /> },
           { label: 'Restante', value: remaining, icon: <ZapIcon /> },
         ].map((stat, i) => (
           <div key={i} className="rounded-2xl p-3"
@@ -139,6 +143,41 @@ export default function Home() {
             <p className="text-purple-200 text-xs mt-1 uppercase tracking-wider">{stat.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Déficit diário */}
+      <div className="mx-5 rounded-2xl p-4 mb-5"
+        style={{
+          background: dailyDeficit > 0 ? 'rgba(52,211,153,0.1)' : dailyDeficit < 0 ? 'rgba(248,113,113,0.1)' : '#1A1A1A',
+          border: `1px solid ${dailyDeficit > 0 ? 'rgba(52,211,153,0.3)' : dailyDeficit < 0 ? 'rgba(248,113,113,0.3)' : '#2A2A2A'}`
+        }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em' }}>
+              Déficit diário
+            </p>
+            <p style={{
+              ...displayFont, fontSize: '2rem', fontWeight: 900, lineHeight: 1, marginTop: '4px',
+              color: dailyDeficit > 0 ? '#34D399' : dailyDeficit < 0 ? '#F87171' : '#6B7280'
+            }}>
+              {dailyDeficit > 0 ? '+' : ''}{dailyDeficit} kcal
+            </p>
+            <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', marginTop: '4px' }}>
+              {dailyDeficit > 0 ? 'Você está em déficit' : dailyDeficit < 0 ? 'Você está em superávit' : 'Registre treinos para calcular'}
+            </p>
+          </div>
+          <div className="text-right">
+            <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em' }}>
+              Déficit semanal
+            </p>
+            <p style={{
+              ...displayFont, fontSize: '1.3rem', fontWeight: 900, lineHeight: 1, marginTop: '4px',
+              color: weeklyDeficit > 0 ? '#34D399' : weeklyDeficit < 0 ? '#F87171' : '#6B7280'
+            }}>
+              {weeklyDeficit > 0 ? '+' : ''}{weeklyDeficit} kcal
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Progresso */}
@@ -153,33 +192,55 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Gráfico semanal */}
+      {/* Relatório semanal */}
       <div className="mx-5 rounded-2xl p-4 mb-5" style={{ background: '#1A1A1A' }}>
         <div className="flex items-center justify-between mb-4">
-          <p style={{ ...displayFont, fontSize: '1rem', fontWeight: 800, color: 'white' }}>Calories</p>
-          <p style={{ ...displayFont, fontSize: '0.75rem', color: '#A78BFA', letterSpacing: '0.05em' }}>Weekly Average</p>
+          <p style={{ ...displayFont, fontSize: '1rem', fontWeight: 800, color: 'white' }}>Relatório semanal</p>
+          <p style={{ ...displayFont, fontSize: '0.75rem', color: '#A78BFA' }}>7 dias</p>
         </div>
-        <div className="flex items-end justify-between gap-1" style={{ height: '80px' }}>
-          {weekData.map((d, i) => (
-            <div key={i} className="flex flex-col items-center gap-1 flex-1">
-              <div className="w-full rounded-t-lg transition-all"
-                style={{
-                  height: `${(d.kcal / maxKcal) * 70}px`,
-                  background: d.isToday ? 'linear-gradient(180deg, #A78BFA, #7C3AED)' : 'rgba(124,58,237,0.25)',
-                  minHeight: '4px'
-                }} />
-              <p style={{
-                fontFamily: 'Barlow Condensed, sans-serif',
-                fontSize: '0.65rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: d.isToday ? '#A78BFA' : '#4B5563',
-                fontWeight: d.isToday ? 700 : 400
-              }}>
-                {d.day}
+
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {[
+            { label: 'Consumido', value: weeklyConsumed, color: '#F87171' },
+            { label: 'Queimado', value: weeklyBurned, color: '#34D399' },
+            { label: 'Déficit', value: weeklyDeficit, color: weeklyDeficit >= 0 ? '#34D399' : '#F87171' },
+          ].map(item => (
+            <div key={item.label} className="text-center">
+              <p style={{ ...displayFont, fontSize: '1.1rem', fontWeight: 900, color: item.color, lineHeight: 1 }}>
+                {item.value > 0 && item.label === 'Déficit' ? '+' : ''}{item.value}
+              </p>
+              <p style={{ ...displayFont, fontSize: '0.6rem', color: '#6B7280', letterSpacing: '0.08em', marginTop: '3px' }}>
+                {item.label}
               </p>
             </div>
           ))}
+        </div>
+
+        {/* Gráfico semanal de déficit */}
+        <div className="flex items-end justify-between gap-1" style={{ height: '60px' }}>
+          {weeklyData.map((d, i) => {
+            const isToday = i === weeklyData.length - 1
+            const hasData = d.consumed > 0 || d.burned > 0
+            const barHeight = hasData ? Math.max((Math.abs(d.deficit) / Math.max(...weeklyData.map(w => Math.abs(w.deficit)), 1)) * 50, 4) : 4
+            return (
+              <div key={i} className="flex flex-col items-center gap-1 flex-1">
+                <div className="w-full rounded-t-lg transition-all"
+                  style={{
+                    height: `${barHeight}px`,
+                    background: !hasData ? '#2A2A2A' : d.deficit >= 0 ? (isToday ? '#34D399' : 'rgba(52,211,153,0.4)') : (isToday ? '#F87171' : 'rgba(248,113,113,0.4)'),
+                    minHeight: '4px'
+                  }} />
+                <p style={{
+                  fontFamily: 'Barlow Condensed, sans-serif', fontSize: '0.6rem',
+                  textTransform: 'uppercase', letterSpacing: '0.05em',
+                  color: isToday ? '#A78BFA' : '#4B5563',
+                  fontWeight: isToday ? 700 : 400
+                }}>
+                  {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'][new Date(d.date).getDay()]}
+                </p>
+              </div>
+            )
+          })}
         </div>
       </div>
 
