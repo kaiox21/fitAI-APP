@@ -93,6 +93,7 @@ export default function Home() {
     if (!file) return
     setPortion(1)
     analyzeImage(file)
+    e.target.value = ""
   }
 
   function handleConfirm() {

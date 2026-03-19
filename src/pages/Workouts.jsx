@@ -81,8 +81,8 @@ const PlusIcon = () => (
   </svg>
 )
 
-const TrashIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
+const TrashIcon = ({ color = '#6B7280' }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
     <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" />
   </svg>
 )
@@ -102,18 +102,14 @@ const inputStyle = {
 }
 
 export default function Workouts() {
-  const { user, addWorkoutLog } = useApp()
+  const { user, addWorkoutLog, removeWorkoutLog } = useApp()
   const [open, setOpen] = useState(null)
   const [openExercise, setOpenExercise] = useState(null)
-
-  // séries por exercício: { "wi-ei": [{reps, weight}, ...] }
   const [seriesData, setSeriesData] = useState({})
-
-  // cardio por treino: { wi: { type, minutes, speed } }
   const [cardioData, setCardioData] = useState({})
-
   const [calculating, setCalculating] = useState(null)
   const [completedLogs, setCompletedLogs] = useState({})
+  const [confirmDelete, setConfirmDelete] = useState(null)
 
   const todayIndex = [1, 3, 5, 6].indexOf(new Date().getDay())
 
@@ -150,6 +146,18 @@ export default function Workouts() {
 
   function updateCardio(wi, field, value) {
     setCardioData(prev => ({ ...prev, [wi]: { ...prev[wi], [field]: value } }))
+  }
+
+  function handleDeleteLog(wi) {
+    if (confirmDelete === wi) {
+      const log = completedLogs[wi]
+      if (log?.logId) removeWorkoutLog(log.logId)
+      setCompletedLogs(prev => { const n = { ...prev }; delete n[wi]; return n })
+      setConfirmDelete(null)
+    } else {
+      setConfirmDelete(wi)
+      setTimeout(() => setConfirmDelete(null), 3000)
+    }
   }
 
   async function calculateAndSave(wi) {
@@ -195,7 +203,9 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
       const result = JSON.parse(text.replace(/```json|```/g, '').trim())
 
+      const logId = Date.now()
       addWorkoutLog({
+        id: logId,
         workout: wt.title,
         tag: wt.tag,
         exercises: exerciseSummary.length,
@@ -205,7 +215,7 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
         duration: result.duration,
       })
 
-      setCompletedLogs(prev => ({ ...prev, [wi]: result }))
+      setCompletedLogs(prev => ({ ...prev, [wi]: { ...result, logId } }))
     } catch {
       const totalVolume = wt.exercises.reduce((sum, ex, ei) => {
         const series = getSeries(wi, ei)
@@ -215,7 +225,9 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
       const cardioKcal = cardio.type ? Math.round((parseInt(cardio.minutes) || 0) * (parseFloat(cardio.speed) || 8) * weight * 0.005) : 0
       const total = musculacaoKcal + cardioKcal || 300
 
+      const logId = Date.now()
       addWorkoutLog({
+        id: logId,
         workout: wt.title,
         tag: wt.tag,
         exercises: exerciseSummary.length,
@@ -225,7 +237,7 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
         duration: (parseInt(cardio.minutes) || 0) + exerciseSummary.length * 5,
       })
 
-      setCompletedLogs(prev => ({ ...prev, [wi]: { caloriesBurned: total, feedback: 'Treino concluído!' } }))
+      setCompletedLogs(prev => ({ ...prev, [wi]: { caloriesBurned: total, feedback: 'Treino concluído!', logId } }))
     } finally {
       setCalculating(null)
     }
@@ -285,8 +297,6 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
 
                   return (
                     <div key={ei} style={{ borderBottom: '1px solid #2A2A2A' }}>
-
-                      {/* Header do exercício */}
                       <div className="flex items-center justify-between px-4 py-3 cursor-pointer"
                         onClick={() => setOpenExercise(isExOpen ? null : `${wi}-${ei}`)}>
                         <div>
@@ -305,37 +315,27 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
                         </div>
                       </div>
 
-                      {/* Séries do exercício */}
                       {isExOpen && (
                         <div className="px-4 pb-4">
-
-                          {/* Header das colunas */}
                           <div className="flex items-center gap-2 mb-2 px-1">
                             <p style={{ ...displayFont, fontSize: '0.6rem', color: '#4B5563', letterSpacing: '0.08em', width: '40px' }}>Série</p>
                             <p style={{ ...displayFont, fontSize: '0.6rem', color: '#4B5563', letterSpacing: '0.08em', width: '60px', textAlign: 'center' }}>Reps</p>
                             <p style={{ ...displayFont, fontSize: '0.6rem', color: '#4B5563', letterSpacing: '0.08em', width: '60px', textAlign: 'center' }}>Peso (kg)</p>
                           </div>
 
-                          {/* Linhas de séries */}
                           {series.map((serie, si) => (
                             <div key={si} className="flex items-center gap-2 mb-2">
                               <p style={{ ...displayFont, fontSize: '0.85rem', fontWeight: 700, color: '#A78BFA', width: '40px' }}>
                                 {si + 1}ª
                               </p>
-                              <input
-                                type="number"
-                                placeholder={String(ex.reps)}
+                              <input type="number" placeholder={String(ex.reps)}
                                 value={serie.reps}
                                 onChange={e => updateSeries(wi, ei, si, 'reps', e.target.value)}
-                                style={inputStyle}
-                              />
-                              <input
-                                type="number"
-                                placeholder="0"
+                                style={inputStyle} />
+                              <input type="number" placeholder="0"
                                 value={serie.weight}
                                 onChange={e => updateSeries(wi, ei, si, 'weight', e.target.value)}
-                                style={inputStyle}
-                              />
+                                style={inputStyle} />
                               <button onClick={() => removeSerie(wi, ei, si)}
                                 className="w-7 h-7 rounded-lg flex items-center justify-center"
                                 style={{ background: '#2A2A2A' }}>
@@ -344,7 +344,6 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
                             </div>
                           ))}
 
-                          {/* Botão adicionar série */}
                           <button onClick={() => addSerie(wi, ei)}
                             className="flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg"
                             style={{ background: 'rgba(124,58,237,0.2)' }}>
@@ -353,7 +352,6 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
                               Adicionar série
                             </p>
                           </button>
-
                         </div>
                       )}
                     </div>
@@ -365,8 +363,6 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
                   <p style={{ ...displayFont, fontSize: '0.8rem', fontWeight: 800, color: '#A78BFA', letterSpacing: '0.08em', marginBottom: '12px' }}>
                     Cardio
                   </p>
-
-                  {/* Seleção do tipo */}
                   <div className="flex flex-wrap gap-2 mb-4">
                     {CARDIOS.map(c => (
                       <button key={c}
@@ -384,36 +380,25 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
                     ))}
                   </div>
 
-                  {/* Campos de tempo e velocidade */}
                   {cardioData[wi]?.type && (
                     <div className="flex gap-3">
                       <div className="flex-1 rounded-xl p-3" style={{ background: '#111' }}>
-                        <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', letterSpacing: '0.08em', marginBottom: '6px' }}>
-                          Tempo
-                        </p>
+                        <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', letterSpacing: '0.08em', marginBottom: '6px' }}>Tempo</p>
                         <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            placeholder="0"
+                          <input type="number" placeholder="0"
                             value={cardioData[wi]?.minutes || ''}
                             onChange={e => updateCardio(wi, 'minutes', e.target.value)}
-                            style={{ ...inputStyle, width: '100%', textAlign: 'left' }}
-                          />
+                            style={{ ...inputStyle, width: '100%', textAlign: 'left' }} />
                           <p style={{ ...displayFont, fontSize: '0.75rem', color: '#6B7280' }}>min</p>
                         </div>
                       </div>
                       <div className="flex-1 rounded-xl p-3" style={{ background: '#111' }}>
-                        <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', letterSpacing: '0.08em', marginBottom: '6px' }}>
-                          Velocidade
-                        </p>
+                        <p style={{ ...displayFont, fontSize: '0.65rem', color: '#6B7280', letterSpacing: '0.08em', marginBottom: '6px' }}>Velocidade</p>
                         <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            placeholder="0"
+                          <input type="number" placeholder="0"
                             value={cardioData[wi]?.speed || ''}
                             onChange={e => updateCardio(wi, 'speed', e.target.value)}
-                            style={{ ...inputStyle, width: '100%', textAlign: 'left' }}
-                          />
+                            style={{ ...inputStyle, width: '100%', textAlign: 'left' }} />
                           <p style={{ ...displayFont, fontSize: '0.75rem', color: '#6B7280' }}>km/h</p>
                         </div>
                       </div>
@@ -421,7 +406,7 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
                   )}
                 </div>
 
-                {/* Botão concluir */}
+                {/* Botão concluir / resultado */}
                 <div className="p-4">
                   {completedLogs[wi] ? (
                     <div className="rounded-xl p-4" style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)' }}>
@@ -429,13 +414,29 @@ Calcule as calorias totais queimadas levando em conta o volume, intensidade e pe
                         <p style={{ ...displayFont, fontSize: '0.75rem', color: '#34D399', letterSpacing: '0.08em' }}>
                           Treino concluído
                         </p>
-                        <p style={{ ...displayFont, fontSize: '2rem', fontWeight: 900, color: '#34D399', lineHeight: 1 }}>
-                          {completedLogs[wi].caloriesBurned} kcal
-                        </p>
+                        <div className="flex items-center gap-3">
+                          <p style={{ ...displayFont, fontSize: '2rem', fontWeight: 900, color: '#34D399', lineHeight: 1 }}>
+                            {completedLogs[wi].caloriesBurned} kcal
+                          </p>
+                          <button
+                            onClick={() => handleDeleteLog(wi)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                            style={{
+                              background: confirmDelete === wi ? 'rgba(248,113,113,0.2)' : '#2A2A2A',
+                              border: confirmDelete === wi ? '1px solid rgba(248,113,113,0.5)' : '1px solid transparent'
+                            }}>
+                            <TrashIcon color={confirmDelete === wi ? '#F87171' : '#6B7280'} />
+                          </button>
+                        </div>
                       </div>
                       {completedLogs[wi].feedback && (
                         <p style={{ fontSize: '0.8rem', color: '#6B7280', fontStyle: 'italic', marginTop: '4px' }}>
                           "{completedLogs[wi].feedback}"
+                        </p>
+                      )}
+                      {confirmDelete === wi && (
+                        <p style={{ ...displayFont, fontSize: '0.65rem', color: '#F87171', letterSpacing: '0.05em', marginTop: '8px' }}>
+                          Clique novamente para confirmar exclusão
                         </p>
                       )}
                     </div>

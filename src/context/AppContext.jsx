@@ -41,12 +41,20 @@ export function AppProvider({ children }) {
     }])
   }
 
+  function removeMeal(id) {
+    setMeals(prev => prev.filter(m => m.id !== id))
+  }
+
   function addMeasure(entry) {
     setMeasures(prev => [...prev, { ...entry, date: new Date().toISOString().split('T')[0] }])
   }
 
   function addWorkoutLog(log) {
     setWorkoutLogs(prev => [...prev, { ...log, date: new Date().toISOString().split('T')[0], id: Date.now() }])
+  }
+
+  function removeWorkoutLog(id) {
+    setWorkoutLogs(prev => prev.filter(w => w.id !== id))
   }
 
   function logout() {
@@ -68,7 +76,6 @@ export function AppProvider({ children }) {
   const totalBurned = todayLogs.reduce((sum, w) => sum + w.caloriesBurned, 0)
   const dailyDeficit = totalBurned - totalKcal
 
-  // Últimos 7 dias
   const weeklyData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
@@ -83,9 +90,9 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       user, setUser,
-      meals, addMeal,
+      meals, addMeal, removeMeal,
       measures, addMeasure,
-      workoutLogs, addWorkoutLog,
+      workoutLogs, addWorkoutLog, removeWorkoutLog,
       totalKcal, totalProt, totalCarb, totalFat,
       totalBurned, dailyDeficit,
       weeklyData, logout,
