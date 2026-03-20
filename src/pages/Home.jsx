@@ -31,10 +31,10 @@ const CameraIcon = () => (
 )
 
 export default function Home() {
-  const { user, totalKcal, meals, addMeal, tdeeBase, burnedFromWorkout, totalBurned, dailyDeficit, weeklyData } = useApp()
+  const { user, totalKcal, meals, addMeal, tdeeBase, burnedFromWorkout, totalBurned, remaining, kcalGoal, dailyDeficit, weeklyData } = useApp()
   const navigate = useNavigate()
-  const remaining = Math.max(user.kcalGoal - totalKcal, 0)
-  const progress = Math.min((totalKcal / user.kcalGoal) * 100, 100)
+  // remaining e kcalGoal vêm do contexto
+  const progress = Math.min((totalKcal / Math.max(kcalGoal, 1)) * 100, 100)
 
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
