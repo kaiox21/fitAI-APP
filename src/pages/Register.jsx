@@ -21,23 +21,24 @@ export default function Register() {
     setForm(p => ({ ...p, [field]: value }))
   }
 
-function calcKcalGoal(f = form) {
-  const w = parseFloat(f.weight)
-  const h = parseFloat(f.height)
-  const a = parseInt(f.age)
-  let tmb = f.sex === 'M'
-    ? 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
-    : 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
-  const tdee = tmb * parseFloat(f.activity)
-  if (f.goal === 'loss') return Math.round(tdee - 500)
-  if (f.goal === 'gain') return Math.round(tdee + 300)
-  return Math.round(tdee)
-}
+  function calcKcalGoal(f = form) {
+    const w = parseFloat(f.weight)
+    const h = parseFloat(f.height)
+    const a = parseInt(f.age)
+    let tmb = f.sex === 'M'
+      ? 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
+      : 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
+    const tdee = tmb * parseFloat(f.activity)
+    if (f.goal === 'loss') return Math.round(tdee - 500)
+    if (f.goal === 'gain') return Math.round(tdee + 300)
+    return Math.round(tdee)
+  }
 
   async function handleFinish() {
     setLoading(true)
     setError(null)
     try {
+      // 1. Cria usuário no Auth
       const { data, error: authError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -55,11 +56,12 @@ function calcKcalGoal(f = form) {
 
       const userId = data.user.id
       const kcalGoal = calcKcalGoal(form)
-      console.log('kcalGoal final:', kcalGoal)
 
-      const { data: profileData, error: profileError } = await supabase
+      // 2. Insere o perfil na tabela profiles
+      const { error: profileError } = await supabase
         .from('profiles')
-        .update({
+        .insert({
+          id: userId,
           name: form.name,
           age: parseInt(form.age),
           sex: form.sex,
@@ -69,14 +71,13 @@ function calcKcalGoal(f = form) {
           activity: parseFloat(form.activity),
           kcal_goal: kcalGoal,
         })
-        .eq('id', userId)
-        .select()
 
       if (profileError) {
         setError('Erro ao salvar perfil: ' + profileError.message)
         return
       }
 
+      // 3. Atualiza contexto local
       setUser({
         id: userId,
         name: form.name,
@@ -91,7 +92,7 @@ function calcKcalGoal(f = form) {
       })
 
       navigate('/home')
-    } catch (err) {
+    } catch (_err) {
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setLoading(false)
@@ -185,13 +186,8 @@ function calcKcalGoal(f = form) {
           </div>
           <div>
             <p className="text-gray-500 text-xs mb-2 uppercase tracking-widest">Nível de atividade</p>
-            <select
-              style={{ ...inputStyle, appearance: 'none' }}
-              value={form.activity}
-              onChange={e => {
-                console.log('activity selecionada:', e.target.value)
-                update('activity', e.target.value)
-              }}>
+            <select style={{ ...inputStyle, appearance: 'none' }}
+              value={form.activity} onChange={e => update('activity', e.target.value)}>
               <option value="1.2">Sedentário</option>
               <option value="1.375">Leve (1 a 3x por semana)</option>
               <option value="1.55">Moderado (3 a 5x por semana)</option>
