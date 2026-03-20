@@ -21,27 +21,18 @@ export default function Register() {
     setForm(p => ({ ...p, [field]: value }))
   }
 
-  function calcKcalGoal() {
-    console.log('=== calcKcalGoal ===')
-    console.log('activity:', form.activity)
-    console.log('weight:', form.weight)
-    console.log('height:', form.height)
-    console.log('age:', form.age)
-    console.log('sex:', form.sex)
-    console.log('goal:', form.goal)
-    const w = parseFloat(form.weight)
-    const h = parseFloat(form.height)
-    const a = parseInt(form.age)
-    let tmb = form.sex === 'M'
-      ? 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
-      : 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
-    console.log('tmb:', tmb)
-    const tdee = tmb * parseFloat(form.activity)
-    console.log('tdee:', tdee)
-    if (form.goal === 'loss') return Math.round(tdee - 500)
-    if (form.goal === 'gain') return Math.round(tdee + 300)
-    return Math.round(tdee)
-  }
+function calcKcalGoal(f = form) {
+  const w = parseFloat(f.weight)
+  const h = parseFloat(f.height)
+  const a = parseInt(f.age)
+  let tmb = f.sex === 'M'
+    ? 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
+    : 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
+  const tdee = tmb * parseFloat(f.activity)
+  if (f.goal === 'loss') return Math.round(tdee - 500)
+  if (f.goal === 'gain') return Math.round(tdee + 300)
+  return Math.round(tdee)
+}
 
   async function handleFinish() {
     setLoading(true)
@@ -63,7 +54,7 @@ export default function Register() {
       }
 
       const userId = data.user.id
-      const kcalGoal = calcKcalGoal()
+      const kcalGoal = calcKcalGoal(form)
       console.log('kcalGoal final:', kcalGoal)
 
       const { data: profileData, error: profileError } = await supabase
