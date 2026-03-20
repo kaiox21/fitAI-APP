@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { supabase } from '../lib/supabase'
 
 const displayFont = { fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase' }
 
 export default function Profile() {
   const { user, setUser, logout } = useApp()
   const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ ...user })
+
+  if (!user) return null
 
   function calcTMB() {
     const w = parseFloat(user.weight)
@@ -20,20 +24,36 @@ export default function Profile() {
     return Math.round(calcTMB() * parseFloat(user.activity || 1.55))
   }
 
-  function handleSave() {
-    const tmb = (() => {
-      const w = parseFloat(form.weight)
-      const h = parseFloat(form.height)
-      const a = parseInt(form.age)
-      if (form.sex === 'M') return 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
-      return 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
-    })()
-    const tdee = Math.round(tmb * parseFloat(form.activity || 1.55))
+  async function handleSave() {
+    setSaving(true)
+    const w = parseFloat(form.weight)
+    const h = parseFloat(form.height)
+    const a = parseInt(form.age)
+    const act = parseFloat(form.activity || 1.55)
+    let tmb = form.sex === 'M'
+      ? 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
+      : 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
+    const tdee = Math.round(tmb * act)
     let kcalGoal = tdee
     if (form.goal === 'loss') kcalGoal = tdee - 500
     if (form.goal === 'gain') kcalGoal = tdee + 300
-    setUser({ ...form, kcalGoal })
-    setEditing(false)
+
+    const { error } = await supabase.from('profiles').update({
+      name: form.name,
+      age: parseInt(form.age),
+      sex: form.sex,
+      weight: parseFloat(form.weight),
+      height: parseFloat(form.height),
+      goal: form.goal,
+      activity: act,
+      kcal_goal: kcalGoal,
+    }).eq('id', user.id)
+
+    if (!error) {
+      setUser({ ...form, activity: act, kcalGoal })
+      setEditing(false)
+    }
+    setSaving(false)
   }
 
   const goalLabels = { loss: 'Emagrecer', gain: 'Ganhar massa', maint: 'Manter peso' }
@@ -58,6 +78,7 @@ export default function Profile() {
         </div>
         <button
           onClick={() => editing ? handleSave() : setEditing(true)}
+          disabled={saving}
           className="px-4 py-2 rounded-full text-white font-bold"
           style={{
             background: editing ? 'linear-gradient(135deg, #7C3AED, #5B21B6)' : '#1A1A1A',
@@ -66,7 +87,7 @@ export default function Profile() {
             fontSize: '0.9rem', letterSpacing: '0.05em', textTransform: 'uppercase'
           }}
         >
-          {editing ? 'Salvar' : 'Editar'}
+          {saving ? 'Salvando...' : editing ? 'Salvar' : 'Editar'}
         </button>
       </div>
 
@@ -74,12 +95,14 @@ export default function Profile() {
       <div className="mx-5 rounded-2xl p-5 mb-4 flex items-center gap-4" style={{ background: '#1A1A1A' }}>
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black flex-shrink-0"
           style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.8rem' }}>
-          {user.name[0].toUpperCase()}
+          {user?.name?.[0]?.toUpperCase() || '?'}
         </div>
         <div>
-          <p style={{ ...displayFont, fontSize: '1.4rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>{user.name}</p>
+          <p style={{ ...displayFont, fontSize: '1.4rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>
+            {user?.name || '...'}
+          </p>
           <p style={{ ...displayFont, fontSize: '0.75rem', color: '#A78BFA', letterSpacing: '0.05em', marginTop: '4px' }}>
-            {goalLabels[user.goal]}
+            {goalLabels[user?.goal] || ''}
           </p>
         </div>
       </div>
@@ -187,15 +210,9 @@ export default function Profile() {
 
       <div className="mx-5">
         <button
-          onClick={() => {
-            if (window.confirm('Tem certeza que quer sair da conta?')) logout()
-          }}
+          onClick={() => { if (window.confirm('Tem certeza que quer sair da conta?')) logout() }}
           className="w-full py-4 rounded-full text-white font-bold uppercase"
-          style={{
-            background: '#1A1A1A', border: '1px solid #2A2A2A',
-            fontFamily: 'Barlow Condensed, sans-serif',
-            letterSpacing: '0.08em', fontSize: '0.95rem'
-          }}
+          style={{ background: '#1A1A1A', border: '1px solid #2A2A2A', fontFamily: 'Barlow Condensed, sans-serif', letterSpacing: '0.08em', fontSize: '0.95rem' }}
         >
           Sair da conta
         </button>

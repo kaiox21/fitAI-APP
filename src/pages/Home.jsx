@@ -98,6 +98,8 @@ export default function Home() {
     setResult(null)
   }
 
+  if (!user) return null
+
   return (
     <div className="pb-24">
 
@@ -106,7 +108,7 @@ export default function Home() {
         <div>
           <p className="text-gray-500 text-xs uppercase tracking-widest">Bem-vindo de volta</p>
           <h1 style={{ ...displayFont, fontSize: '2.2rem', fontWeight: 900, color: 'white', lineHeight: 1.1 }}>
-            Hi, {user.name.split(' ')[0]}.
+            Hi, {user?.name?.split(' ')[0] || '...'}.
           </h1>
           <p className="text-gray-600 text-xs mt-1">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -115,7 +117,7 @@ export default function Home() {
         <div onClick={() => navigate('/profile')}
           className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-xl cursor-pointer"
           style={{ background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', fontFamily: 'Barlow Condensed, sans-serif' }}>
-          {user.name[0].toUpperCase()}
+          {user?.name?.[0]?.toUpperCase() || '?'}
         </div>
       </div>
 
