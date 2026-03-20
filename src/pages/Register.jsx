@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
 import { supabase } from '../lib/supabase'
 
 const STEPS = ['Conta', 'Corpo', 'Objetivo']
 
 export default function Register() {
   const navigate = useNavigate()
-  const { setUser } = useApp()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -18,17 +16,18 @@ export default function Register() {
   })
 
   function update(field, value) {
-    setForm(p => ({ ...p, [field]: value }))
+    setForm(prev => ({ ...prev, [field]: value }))
   }
 
-  function calcKcalGoal(f = form) {
+  function calcKcalGoal(f) {
     const w = parseFloat(f.weight)
     const h = parseFloat(f.height)
     const a = parseInt(f.age)
+    const act = parseFloat(f.activity)
     let tmb = f.sex === 'M'
       ? 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
       : 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
-    const tdee = tmb * parseFloat(f.activity)
+    const tdee = tmb * act
     if (f.goal === 'loss') return Math.round(tdee - 500)
     if (f.goal === 'gain') return Math.round(tdee + 300)
     return Math.round(tdee)
@@ -38,7 +37,6 @@ export default function Register() {
     setLoading(true)
     setError(null)
     try {
-      // 1. Cria usuário no Auth
       const { data, error: authError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -56,8 +54,8 @@ export default function Register() {
 
       const userId = data.user.id
       const kcalGoal = calcKcalGoal(form)
+      const activityValue = parseFloat(form.activity)
 
-      // 2. Insere o perfil na tabela profiles
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -68,7 +66,7 @@ export default function Register() {
           weight: parseFloat(form.weight),
           height: parseFloat(form.height),
           goal: form.goal,
-          activity: parseFloat(form.activity),
+          activity: activityValue,
           kcal_goal: kcalGoal,
         })
 
@@ -77,20 +75,7 @@ export default function Register() {
         return
       }
 
-      // 3. Atualiza contexto local
-      setUser({
-        id: userId,
-        name: form.name,
-        email: form.email,
-        age: form.age,
-        weight: form.weight,
-        height: form.height,
-        sex: form.sex,
-        goal: form.goal,
-        activity: form.activity,
-        kcalGoal,
-      })
-
+      // O AppContext vai carregar o perfil automaticamente via onAuthStateChange
       navigate('/home')
     } catch (_err) {
       setError('Erro inesperado. Tente novamente.')
@@ -186,8 +171,10 @@ export default function Register() {
           </div>
           <div>
             <p className="text-gray-500 text-xs mb-2 uppercase tracking-widest">Nível de atividade</p>
-            <select style={{ ...inputStyle, appearance: 'none' }}
-              value={form.activity} onChange={e => update('activity', e.target.value)}>
+            <select
+              style={{ ...inputStyle, appearance: 'none' }}
+              value={form.activity}
+              onChange={e => update('activity', e.target.value)}>
               <option value="1.2">Sedentário</option>
               <option value="1.375">Leve (1 a 3x por semana)</option>
               <option value="1.55">Moderado (3 a 5x por semana)</option>
@@ -230,7 +217,10 @@ export default function Register() {
               style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.4)' }}>
               <p className="text-purple-400 text-xs uppercase tracking-widest mb-1">Meta calórica estimada</p>
               <p style={{ ...displayFont, fontSize: '2rem', fontWeight: 900, color: 'white' }}>
-                {calcKcalGoal()} <span className="text-purple-400 text-lg">kcal/dia</span>
+                {calcKcalGoal(form)} <span className="text-purple-400 text-lg">kcal/dia</span>
+              </p>
+              <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', marginTop: '4px' }}>
+                Nível: {form.activity === '1.2' ? 'Sedentário' : form.activity === '1.375' ? 'Leve' : form.activity === '1.55' ? 'Moderado' : 'Intenso'}
               </p>
             </div>
           )}
