@@ -82,17 +82,17 @@ export function AppProvider({ children }) {
   const totalCarb = todayMeals.reduce((sum, m) => sum + m.carb, 0)
   const totalFat = todayMeals.reduce((sum, m) => sum + m.fat, 0)
 
+  // Calorias queimadas no treino
   const burnedFromWorkout = todayLogs.reduce((sum, w) => sum + w.caloriesBurned, 0)
 
-  // TDEE já com fator de atividade do usuário (inclui treino esperado)
-  const tdeeBase = user ? Math.round(calcTMB(user) * parseFloat(user.activity || 1.55)) : 0
-
-  // Gasto total = TDEE + calorias extras do treino real
+  // Gasto real = TMB × 1.2 (corpo existindo, sem contar treino) + treino feito
+  const tdeeBase = user ? Math.round(calcTMB(user) * 1.2) : 0
   const totalBurned = tdeeBase + burnedFromWorkout
 
-  // Déficit = gasto total - consumido
+  // Déficit = gasto real - consumido
   const dailyDeficit = totalBurned - totalKcal
 
+  // Dados semanais
   const weeklyData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
@@ -100,7 +100,7 @@ export function AppProvider({ children }) {
     const dayMeals = meals.filter(m => m.date === key)
     const dayLogs = workoutLogs.filter(w => w.date === key)
     const consumed = dayMeals.reduce((s, m) => s + m.kcal, 0)
-    const burned = (user ? Math.round(calcTMB(user) * parseFloat(user.activity || 1.55)) : 0)
+    const burned = (user ? Math.round(calcTMB(user) * 1.2) : 0)
       + dayLogs.reduce((s, w) => s + w.caloriesBurned, 0)
     return { date: key, consumed, burned, deficit: burned - consumed }
   })
