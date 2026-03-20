@@ -28,7 +28,7 @@ export default function Register() {
     let tmb = form.sex === 'M'
       ? 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
       : 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
-    const tdee = tmb * 1.2
+    const tdee = tmb * parseFloat(form.activity)
     if (form.goal === 'loss') return Math.round(tdee - 500)
     if (form.goal === 'gain') return Math.round(tdee + 300)
     return Math.round(tdee)
@@ -38,7 +38,6 @@ export default function Register() {
     setLoading(true)
     setError(null)
     try {
-      // 1. Cria o usuário no Supabase Auth
       const { data, error: authError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -57,7 +56,6 @@ export default function Register() {
       const userId = data.user.id
       const kcalGoal = calcKcalGoal()
 
-      // 2. Atualiza o perfil criado pelo trigger
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -78,7 +76,6 @@ export default function Register() {
         return
       }
 
-      // 3. Atualiza o contexto local
       setUser({
         id: userId,
         name: form.name,
@@ -103,15 +100,9 @@ export default function Register() {
   const inputStyle = {
     background: 'transparent',
     borderBottom: '1px solid #3A3A3A',
-    borderTop: 'none',
-    borderLeft: 'none',
-    borderRight: 'none',
-    borderRadius: 0,
-    color: 'white',
-    padding: '12px 0',
-    width: '100%',
-    outline: 'none',
-    fontSize: '1rem',
+    borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+    borderRadius: 0, color: 'white', padding: '12px 0',
+    width: '100%', outline: 'none', fontSize: '1rem',
   }
 
   const displayFont = { fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase' }
@@ -268,7 +259,6 @@ export default function Register() {
           </span>
         </p>
       )}
-
     </div>
   )
 }

@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { supabase } from '../lib/supabase'
 
 const displayFont = { fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase' }
 
 export default function Profile() {
   const { user, setUser, logout } = useApp()
   const [editing, setEditing] = useState(false)
-  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ ...user })
 
   function calcTMB() {
@@ -19,36 +17,23 @@ export default function Profile() {
   }
 
   function calcTDEE() {
-    return Math.round(calcTMB() * 1.55)
+    return Math.round(calcTMB() * parseFloat(user.activity || 1.55))
   }
 
-  async function handleSave() {
-    setSaving(true)
-    const tdee = calcTDEE()
+  function handleSave() {
+    const tmb = (() => {
+      const w = parseFloat(form.weight)
+      const h = parseFloat(form.height)
+      const a = parseInt(form.age)
+      if (form.sex === 'M') return 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
+      return 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
+    })()
+    const tdee = Math.round(tmb * parseFloat(form.activity || 1.55))
     let kcalGoal = tdee
     if (form.goal === 'loss') kcalGoal = tdee - 500
     if (form.goal === 'gain') kcalGoal = tdee + 300
-
-    const updatedUser = { ...form, kcalGoal }
-
-    // Atualiza no Supabase
-    const { error } = await supabase.from('profiles').update({
-      name: form.name,
-      age: parseInt(form.age),
-      sex: form.sex,
-      weight: parseFloat(form.weight),
-      height: parseFloat(form.height),
-      goal: form.goal,
-      activity: parseFloat(form.activity),
-      kcal_goal: kcalGoal,
-    }).eq('id', user.id)
-
-    if (!error) {
-      setUser(updatedUser)
-      setEditing(false)
-    }
-
-    setSaving(false)
+    setUser({ ...form, kcalGoal })
+    setEditing(false)
   }
 
   const goalLabels = { loss: 'Emagrecer', gain: 'Ganhar massa', maint: 'Manter peso' }
@@ -56,15 +41,9 @@ export default function Profile() {
   const inputStyle = {
     background: 'transparent',
     borderBottom: '1px solid #3A3A3A',
-    borderTop: 'none',
-    borderLeft: 'none',
-    borderRight: 'none',
-    borderRadius: 0,
-    color: 'white',
-    padding: '10px 0',
-    width: '100%',
-    outline: 'none',
-    fontSize: '1rem',
+    borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+    borderRadius: 0, color: 'white', padding: '10px 0',
+    width: '100%', outline: 'none', fontSize: '1rem',
   }
 
   return (
@@ -79,11 +58,15 @@ export default function Profile() {
         </div>
         <button
           onClick={() => editing ? handleSave() : setEditing(true)}
-          disabled={saving}
           className="px-4 py-2 rounded-full text-white font-bold"
-          style={{ background: editing ? 'linear-gradient(135deg, #7C3AED, #5B21B6)' : '#1A1A1A', border: editing ? 'none' : '1px solid #2A2A2A', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '0.9rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}
+          style={{
+            background: editing ? 'linear-gradient(135deg, #7C3AED, #5B21B6)' : '#1A1A1A',
+            border: editing ? 'none' : '1px solid #2A2A2A',
+            fontFamily: 'Barlow Condensed, sans-serif',
+            fontSize: '0.9rem', letterSpacing: '0.05em', textTransform: 'uppercase'
+          }}
         >
-          {saving ? 'Salvando...' : editing ? 'Salvar' : 'Editar'}
+          {editing ? 'Salvar' : 'Editar'}
         </button>
       </div>
 
@@ -151,6 +134,16 @@ export default function Profile() {
               </div>
             </div>
             <div>
+              <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em', marginBottom: '4px' }}>Nível de atividade</p>
+              <select style={inputStyle} value={form.activity}
+                onChange={e => setForm(p => ({ ...p, activity: e.target.value }))}>
+                <option value="1.2">Sedentário</option>
+                <option value="1.375">Leve (1 a 3x por semana)</option>
+                <option value="1.55">Moderado (3 a 5x por semana)</option>
+                <option value="1.725">Intenso (6 a 7x por semana)</option>
+              </select>
+            </div>
+            <div>
               <p style={{ ...displayFont, fontSize: '0.7rem', color: '#6B7280', letterSpacing: '0.1em', marginBottom: '8px' }}>Objetivo</p>
               <div className="grid grid-cols-3 gap-2">
                 {[
@@ -165,9 +158,7 @@ export default function Profile() {
                       background: form.goal === g.value ? '#7C3AED' : '#2A2A2A',
                       color: form.goal === g.value ? 'white' : '#6B7280',
                       fontFamily: 'Barlow Condensed, sans-serif',
-                      fontSize: '0.8rem',
-                      letterSpacing: '0.05em',
-                      textTransform: 'uppercase'
+                      fontSize: '0.8rem', letterSpacing: '0.05em', textTransform: 'uppercase'
                     }}>
                     {g.label}
                   </button>
@@ -200,7 +191,11 @@ export default function Profile() {
             if (window.confirm('Tem certeza que quer sair da conta?')) logout()
           }}
           className="w-full py-4 rounded-full text-white font-bold uppercase"
-          style={{ background: '#1A1A1A', border: '1px solid #2A2A2A', fontFamily: 'Barlow Condensed, sans-serif', letterSpacing: '0.08em', fontSize: '0.95rem' }}
+          style={{
+            background: '#1A1A1A', border: '1px solid #2A2A2A',
+            fontFamily: 'Barlow Condensed, sans-serif',
+            letterSpacing: '0.08em', fontSize: '0.95rem'
+          }}
         >
           Sair da conta
         </button>
