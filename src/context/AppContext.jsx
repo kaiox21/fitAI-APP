@@ -16,7 +16,7 @@ function calcTDEEBase(user) {
   return Math.round(calcTMB(user) * 1.2)
 }
 
-// TDEE com fator de atividade do perfil (nível de intensidade de treino)
+// TDEE com fator de atividade do perfil
 function calcTDEEActivity(user) {
   return Math.round(calcTMB(user) * (parseFloat(user.activity) || 1.55))
 }
@@ -30,32 +30,80 @@ function calcKcalAllowed(user) {
 }
 
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('fitai_user')
-    return saved ? JSON.parse(saved) : null
-  })
-
+  const [user, setUser] = useState(null)
   const [meals, setMeals] = useState([])
   const [measures, setMeasures] = useState([])
   const [workoutLogs, setWorkoutLogs] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
 
+  // Ao iniciar, verifica se há sessão ativa no Supabase e carrega perfil do banco
   useEffect(() => {
-    localStorage.setItem('fitai_user', JSON.stringify(user))
-  }, [user])
+    async function init() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        await loadProfile(session.user.id, session.user.email)
+      } else {
+        setLoading(false)
+      }
+    }
+    init()
 
-  useEffect(() => {
-    if (!user?.id) return
-    loadData()
-  }, [user?.id])
+    // Listener para mudanças de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await loadProfile(session.user.id, session.user.email)
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setMeals([])
+        setMeasures([])
+        setWorkoutLogs([])
+        setLoading(false)
+      }
+    })
 
-  async function loadData() {
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Carrega perfil do banco
+  async function loadProfile(userId, email) {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (!error && profile) {
+        setUser({
+          id: profile.id,
+          name: profile.name,
+          email: email,
+          age: profile.age,
+          weight: profile.weight,
+          height: profile.height,
+          sex: profile.sex,
+          goal: profile.goal,
+          activity: profile.activity,
+          kcalGoal: profile.kcal_goal,
+        })
+        await loadData(userId)
+      } else {
+        setLoading(false)
+      }
+    } catch (err) {
+      console.error('Erro ao carregar perfil:', err)
+      setLoading(false)
+    }
+  }
+
+  // Carrega refeições, medidas e treinos do banco
+  async function loadData(userId) {
     setLoading(true)
     try {
       const [mealsRes, measuresRes, logsRes] = await Promise.all([
-        supabase.from('meals').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('measures').select('*').eq('user_id', user.id).order('date', { ascending: true }),
-        supabase.from('workout_logs').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+        supabase.from('meals').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('measures').select('*').eq('user_id', userId).order('date', { ascending: true }),
+        supabase.from('workout_logs').select('*').eq('user_id', userId).order('date', { ascending: false }),
       ])
 
       if (mealsRes.data) setMeals(mealsRes.data.map(m => ({
@@ -154,7 +202,6 @@ export function AppProvider({ children }) {
     setMeals([])
     setMeasures([])
     setWorkoutLogs([])
-    localStorage.clear()
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -166,13 +213,12 @@ export function AppProvider({ children }) {
   const totalCarb = todayMeals.reduce((sum, m) => sum + m.carb, 0)
   const totalFat = todayMeals.reduce((sum, m) => sum + m.fat, 0)
 
-  // Calorias queimadas no treino hoje
   const burnedFromWorkout = todayLogs.reduce((sum, w) => sum + w.caloriesBurned, 0)
 
   // Queimado: só metabolismo + dia a dia (sem treino)
   const tdeeBase = user ? calcTDEEBase(user) : 0
 
-  // Restante: quanto pode comer = TDEE com atividade ± objetivo + treino real - já consumido
+  // Restante: TDEE com atividade ± objetivo + treino real - já consumido
   const kcalAllowed = user ? calcKcalAllowed(user) + burnedFromWorkout : 0
   const remaining = Math.max(kcalAllowed - totalKcal, 0)
 
@@ -180,10 +226,10 @@ export function AppProvider({ children }) {
   const totalBurned = tdeeBase + burnedFromWorkout
   const dailyDeficit = totalBurned - totalKcal
 
-  // Progresso: quanto da meta calórica já consumiu
+  // Meta calórica base (sem treino do dia)
   const kcalGoal = user ? calcKcalAllowed(user) : 0
 
-  // Dados semanais — só conta dias com registro
+  // Dados semanais
   const weeklyData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))

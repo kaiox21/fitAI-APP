@@ -10,8 +10,22 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import BottomNav from './components/BottomNav'
 
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F0F0F' }}>
+      <div className="flex gap-2">
+        {[0, 0.1, 0.2].map((delay, i) => (
+          <div key={i} className="w-3 h-3 rounded-full animate-bounce"
+            style={{ background: '#7C3AED', animationDelay: `${delay}s` }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function PrivateRoute({ children }) {
-  const { user } = useApp()
+  const { user, loading } = useApp()
+  if (loading) return <LoadingScreen />
   return user ? (
     <div className="min-h-screen max-w-md mx-auto relative" style={{ background: '#0F0F0F' }}>
       {children}
@@ -21,7 +35,8 @@ function PrivateRoute({ children }) {
 }
 
 function PublicRoute({ children }) {
-  const { user } = useApp()
+  const { user, loading } = useApp()
+  if (loading) return <LoadingScreen />
   return !user ? children : <Navigate to="/home" />
 }
 

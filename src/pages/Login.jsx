@@ -1,11 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { useApp } from '../context/AppContext'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { setUser } = useApp()
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -32,7 +30,7 @@ export default function Login() {
     setLoading(true)
     setError(null)
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email: form.email,
         password: form.password,
       })
@@ -42,30 +40,7 @@ export default function Login() {
         return
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single()
-
-      if (profileError || !profile) {
-        setError('Perfil não encontrado.')
-        return
-      }
-
-      setUser({
-        id: profile.id,
-        name: profile.name,
-        email: form.email,
-        age: profile.age,
-        weight: profile.weight,
-        height: profile.height,
-        sex: profile.sex,
-        goal: profile.goal,
-        activity: profile.activity,
-        kcalGoal: profile.kcal_goal,
-      })
-
+      // onAuthStateChange no AppContext cuida de carregar o perfil e redirecionar
       navigate('/home')
     } catch (_error) {
       setError('Erro ao fazer login. Tente novamente.')
