@@ -22,13 +22,22 @@ export default function Register() {
   }
 
   function calcKcalGoal() {
+    console.log('=== calcKcalGoal ===')
+    console.log('activity:', form.activity)
+    console.log('weight:', form.weight)
+    console.log('height:', form.height)
+    console.log('age:', form.age)
+    console.log('sex:', form.sex)
+    console.log('goal:', form.goal)
     const w = parseFloat(form.weight)
     const h = parseFloat(form.height)
     const a = parseInt(form.age)
     let tmb = form.sex === 'M'
       ? 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
       : 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
+    console.log('tmb:', tmb)
     const tdee = tmb * parseFloat(form.activity)
+    console.log('tdee:', tdee)
     if (form.goal === 'loss') return Math.round(tdee - 500)
     if (form.goal === 'gain') return Math.round(tdee + 300)
     return Math.round(tdee)
@@ -55,6 +64,7 @@ export default function Register() {
 
       const userId = data.user.id
       const kcalGoal = calcKcalGoal()
+      console.log('kcalGoal final:', kcalGoal)
 
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -184,8 +194,13 @@ export default function Register() {
           </div>
           <div>
             <p className="text-gray-500 text-xs mb-2 uppercase tracking-widest">Nível de atividade</p>
-            <select style={{ ...inputStyle, appearance: 'none' }}
-              value={form.activity} onChange={e => update('activity', e.target.value)}>
+            <select
+              style={{ ...inputStyle, appearance: 'none' }}
+              value={form.activity}
+              onChange={e => {
+                console.log('activity selecionada:', e.target.value)
+                update('activity', e.target.value)
+              }}>
               <option value="1.2">Sedentário</option>
               <option value="1.375">Leve (1 a 3x por semana)</option>
               <option value="1.55">Moderado (3 a 5x por semana)</option>
@@ -259,6 +274,7 @@ export default function Register() {
           </span>
         </p>
       )}
+
     </div>
   )
 }
