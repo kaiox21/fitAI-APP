@@ -205,9 +205,9 @@ export default function Register() {
         <div className="flex flex-col gap-4 flex-1">
           <p className="text-gray-400 text-sm mb-2">Qual é o seu objetivo?</p>
           {[
-            { value: 'loss', icon: '📉', title: 'Lose Weight', desc: 'Déficit de 500 kcal/dia' },
-            { value: 'gain', icon: '💪', title: 'Get Fit', desc: 'Superávit de 300 kcal/dia' },
-            { value: 'maint', icon: '⚖️', title: 'Maintain', desc: 'Manutenção calórica' },
+            { value: 'loss', icon: '📉', title: 'Emagrecer', desc: 'Déficit de 500 kcal/dia' },
+            { value: 'gain', icon: '💪', title: 'Ganhar massa muscular', desc: 'Superávit de 300 kcal/dia' },
+            { value: 'maint', icon: '⚖️', title: 'Manter o peso', desc: 'Manutenção calórica' },
           ].map(g => (
             <button key={g.value} onClick={() => update('goal', g.value)}
               className="flex items-center gap-4 p-4 rounded-2xl text-left transition-all"

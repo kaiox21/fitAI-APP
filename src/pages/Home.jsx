@@ -372,7 +372,7 @@ export default function Home() {
         <label className="flex items-center justify-center gap-3 w-full py-4 rounded-full cursor-pointer text-white transition-all active:scale-95"
           style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '1.1rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
           <CameraIcon />
-          Add Meal
+          Adicionar Refeição
           <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
         </label>
       </div>
