@@ -28,7 +28,7 @@ export default function Register() {
     let tmb = form.sex === 'M'
       ? 88.36 + 13.4 * w + 4.8 * h - 5.7 * a
       : 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
-    const tdee = tmb * parseFloat(form.activity)
+    const tdee = tmb * 1.2
     if (form.goal === 'loss') return Math.round(tdee - 500)
     if (form.goal === 'gain') return Math.round(tdee + 300)
     return Math.round(tdee)
@@ -44,9 +44,6 @@ export default function Register() {
         password: form.password,
       })
 
-      console.log('Auth data:', JSON.stringify(data))
-      console.log('Auth error:', JSON.stringify(authError))
-
       if (authError) {
         setError('Erro ao criar conta: ' + authError.message)
         return
@@ -60,24 +57,21 @@ export default function Register() {
       const userId = data.user.id
       const kcalGoal = calcKcalGoal()
 
-      console.log('userId:', userId)
-      console.log('kcalGoal:', kcalGoal)
-
-      // 2. Salva o perfil na tabela profiles
-      const { data: profileData, error: profileError } = await supabase.from('profiles').insert({
-        id: userId,
-        name: form.name,
-        age: parseInt(form.age),
-        sex: form.sex,
-        weight: parseFloat(form.weight),
-        height: parseFloat(form.height),
-        goal: form.goal,
-        activity: parseFloat(form.activity),
-        kcal_goal: kcalGoal,
-      }).select()
-
-      console.log('Profile data:', JSON.stringify(profileData))
-      console.log('Profile error:', JSON.stringify(profileError))
+      // 2. Atualiza o perfil criado pelo trigger
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          name: form.name,
+          age: parseInt(form.age),
+          sex: form.sex,
+          weight: parseFloat(form.weight),
+          height: parseFloat(form.height),
+          goal: form.goal,
+          activity: parseFloat(form.activity),
+          kcal_goal: kcalGoal,
+        })
+        .eq('id', userId)
+        .select()
 
       if (profileError) {
         setError('Erro ao salvar perfil: ' + profileError.message)
@@ -100,7 +94,6 @@ export default function Register() {
 
       navigate('/home')
     } catch (err) {
-      console.log('Catch error:', err)
       setError('Erro inesperado. Tente novamente.')
     } finally {
       setLoading(false)
@@ -129,7 +122,6 @@ export default function Register() {
       <button onClick={() => step === 0 ? navigate('/') : setStep(s => s - 1)}
         className="text-gray-500 text-xl mb-8">←</button>
 
-      {/* Progress */}
       <div className="flex gap-2 mb-6">
         {STEPS.map((s, i) => (
           <div key={i} className="flex-1 h-1 rounded-full transition-all"
@@ -142,7 +134,6 @@ export default function Register() {
         {STEPS[step]}.
       </h1>
 
-      {/* Step 0 */}
       {step === 0 && (
         <div className="flex flex-col gap-6 flex-1">
           <div>
@@ -163,7 +154,6 @@ export default function Register() {
         </div>
       )}
 
-      {/* Step 1 */}
       {step === 1 && (
         <div className="flex flex-col gap-6 flex-1">
           <div className="grid grid-cols-2 gap-4">
@@ -214,7 +204,6 @@ export default function Register() {
         </div>
       )}
 
-      {/* Step 2 */}
       {step === 2 && (
         <div className="flex flex-col gap-4 flex-1">
           <p className="text-gray-400 text-sm mb-2">Qual é o seu objetivo?</p>
