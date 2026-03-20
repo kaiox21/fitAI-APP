@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useApp } from '../context/AppContext'
 import { supabase } from '../lib/supabase'
 
 const STEPS = ['Conta', 'Corpo', 'Objetivo']
 
 export default function Register() {
   const navigate = useNavigate()
+  const { setUser } = useApp()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -37,6 +39,7 @@ export default function Register() {
     setLoading(true)
     setError(null)
     try {
+      // 1. Cria usuário no Auth
       const { data, error: authError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -56,9 +59,10 @@ export default function Register() {
       const kcalGoal = calcKcalGoal(form)
       const activityValue = parseFloat(form.activity)
 
+      // 2. Upsert do perfil (cria ou atualiza se já existir)
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert({
+        .upsert({
           id: userId,
           name: form.name,
           age: parseInt(form.age),
@@ -68,14 +72,27 @@ export default function Register() {
           goal: form.goal,
           activity: activityValue,
           kcal_goal: kcalGoal,
-        })
+        }, { onConflict: 'id' })
 
       if (profileError) {
         setError('Erro ao salvar perfil: ' + profileError.message)
         return
       }
 
-      // O AppContext vai carregar o perfil automaticamente via onAuthStateChange
+      // 3. Seta usuário diretamente no contexto
+      setUser({
+        id: userId,
+        name: form.name,
+        email: form.email,
+        age: form.age,
+        weight: form.weight,
+        height: form.height,
+        sex: form.sex,
+        goal: form.goal,
+        activity: activityValue,
+        kcalGoal,
+      })
+
       navigate('/home')
     } catch (_err) {
       setError('Erro inesperado. Tente novamente.')

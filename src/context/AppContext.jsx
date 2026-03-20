@@ -11,17 +11,14 @@ function calcTMB(user) {
   return 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
 }
 
-// Calorias que o corpo queima só existindo + atividades do dia a dia (sem treino)
 function calcTDEEBase(user) {
   return Math.round(calcTMB(user) * 1.2)
 }
 
-// TDEE com fator de atividade do perfil
 function calcTDEEActivity(user) {
   return Math.round(calcTMB(user) * (parseFloat(user.activity) || 1.55))
 }
 
-// Calorias que pode consumir = TDEE com atividade ± ajuste de objetivo
 function calcKcalAllowed(user) {
   const tdee = calcTDEEActivity(user)
   if (user.goal === 'loss') return tdee - 500
@@ -36,23 +33,19 @@ export function AppProvider({ children }) {
   const [workoutLogs, setWorkoutLogs] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Ao iniciar, verifica se há sessão ativa no Supabase e carrega perfil do banco
   useEffect(() => {
-    async function init() {
-      const { data: { session } } = await supabase.auth.getSession()
+    // Verifica sessão existente ao iniciar
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        await loadProfile(session.user.id, session.user.email)
+        loadProfile(session.user.id, session.user.email)
       } else {
         setLoading(false)
       }
-    }
-    init()
+    })
 
-    // Listener para mudanças de auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        await loadProfile(session.user.id, session.user.email)
-      } else if (event === 'SIGNED_OUT') {
+    // Listener apenas para SIGNED_OUT
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
         setUser(null)
         setMeals([])
         setMeasures([])
@@ -64,7 +57,13 @@ export function AppProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Carrega perfil do banco
+  // Carrega dados quando user é setado
+  useEffect(() => {
+    if (user?.id) {
+      loadData(user.id)
+    }
+  }, [user?.id])
+
   async function loadProfile(userId, email) {
     try {
       const { data: profile, error } = await supabase
@@ -73,7 +72,7 @@ export function AppProvider({ children }) {
         .eq('id', userId)
         .single()
 
-      if (!error && profile) {
+      if (!error && profile?.name) {
         setUser({
           id: profile.id,
           name: profile.name,
@@ -86,7 +85,6 @@ export function AppProvider({ children }) {
           activity: profile.activity,
           kcalGoal: profile.kcal_goal,
         })
-        await loadData(userId)
       } else {
         setLoading(false)
       }
@@ -96,9 +94,7 @@ export function AppProvider({ children }) {
     }
   }
 
-  // Carrega refeições, medidas e treinos do banco
   async function loadData(userId) {
-    setLoading(true)
     try {
       const [mealsRes, measuresRes, logsRes] = await Promise.all([
         supabase.from('meals').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
@@ -198,10 +194,6 @@ export function AppProvider({ children }) {
 
   async function logout() {
     await supabase.auth.signOut()
-    setUser(null)
-    setMeals([])
-    setMeasures([])
-    setWorkoutLogs([])
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -214,22 +206,13 @@ export function AppProvider({ children }) {
   const totalFat = todayMeals.reduce((sum, m) => sum + m.fat, 0)
 
   const burnedFromWorkout = todayLogs.reduce((sum, w) => sum + w.caloriesBurned, 0)
-
-  // Queimado: só metabolismo + dia a dia (sem treino)
   const tdeeBase = user ? calcTDEEBase(user) : 0
-
-  // Restante: TDEE com atividade ± objetivo + treino real - já consumido
   const kcalAllowed = user ? calcKcalAllowed(user) + burnedFromWorkout : 0
   const remaining = Math.max(kcalAllowed - totalKcal, 0)
-
-  // Déficit real: (metabolismo + treino real) - consumido
   const totalBurned = tdeeBase + burnedFromWorkout
   const dailyDeficit = totalBurned - totalKcal
-
-  // Meta calórica base (sem treino do dia)
   const kcalGoal = user ? calcKcalAllowed(user) : 0
 
-  // Dados semanais
   const weeklyData = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
