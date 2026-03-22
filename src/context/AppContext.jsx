@@ -207,7 +207,7 @@ export function AppProvider({ children }) {
 
   const burnedFromWorkout = todayLogs.reduce((sum, w) => sum + w.caloriesBurned, 0)
   const tdeeBase = user ? calcTDEEBase(user) : 0
-  const kcalAllowed = user ? calcKcalAllowed(user) + burnedFromWorkout : 0
+  const kcalAllowed = user ? calcKcalAllowed(user) : 0
   const remaining = Math.max(kcalAllowed - totalKcal, 0)
   const totalBurned = tdeeBase + burnedFromWorkout
   const dailyDeficit = totalBurned - totalKcal
