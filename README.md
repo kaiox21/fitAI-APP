@@ -14,12 +14,8 @@ O FitAI nasceu como um projeto pessoal para resolver um problema real: acompanha
 A proposta central é usar IA em pontos críticos do fluxo — não como feature decorativa, mas como motor do produto:
 
 - **Foto → Macros**: o usuário tira uma foto do prato e a IA identifica o alimento e estima calorias, proteínas, carboidratos e gorduras
-
-![Image](https://github.com/user-attachments/assets/2202ab93-17ec-4b5f-8ddc-693eea12842d)
 - **Treino → Calorias**: após registrar séries, repetições e peso de cada exercício, a IA calcula as calorias queimadas com base no volume e intensidade real do treino
 - **Cardio inteligente**: tempo e velocidade do cardio são considerados no cálculo total
-
-![Image](https://github.com/user-attachments/assets/8af8696e-1ab8-45b8-ad1f-636395ad1cb8)
 
 ## Stack tecnológica
 
